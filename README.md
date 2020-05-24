@@ -17,34 +17,36 @@ as well.
 
 ### Data Structures
 
-| Tutorial                       | Library                      |
-| ------------------------------ | ---------------------------- |
-| [Andersson Trees][andersson]   | [jsw\_atree](jsw\_atree)     |
-| [AVL Trees][avl]               | [jsw\_avltree](jsw\_avltree) |
-| [Basic Tries][trie1]           |                              |
-| [Binary Search Trees I][bst1]  |                              |
-| [Binary Search Trees II][bst2] |                              |
-| [Hash Tables][hashtable]       | [jsw\_hlib](jsw\_hlib)       |
-| [Linked Lists][linklist]       |                              |
-| [Red Black Trees][rbtree]      | [jsw\_rbtree](jsw\_rbtree)   |
-| [Skip Lists][skip]             | [jsw\_slib](jsw\_slib)       |
+| Tutorial                           | Library                      |
+| ---------------------------------- | ---------------------------- |
+| [Andersson Trees][dst-andersson]   | [jsw\_atree](jsw\_atree)     |
+| [AVL Trees][dst-avl]               | [jsw\_avltree](jsw\_avltree) |
+| [Basic Tries][dst-trie1]           |                              |
+| [Binary Search Trees I][dst-bst1]  |                              |
+| [Binary Search Trees II][dst-bst2] |                              |
+| [Hash Tables][dst-hashtable]       | [jsw\_hlib](jsw\_hlib)       |
+| [Linked Lists][dst-linklist]       |                              |
+| [Red Black Trees][dst-rbtree]      | [jsw\_rbtree](jsw\_rbtree)   |
+| [Skip Lists][dst-skip]             | [jsw\_slib](jsw\_slib)       |
 
 ### Algorithms
 
-* [Hashing][hashing]
-* [Random Numbers][rand]
-* [Sorting][sorting]
+| Tutorial                           | Library                      |
+| ---------------------------------- | ---------------------------- |
+| [Hashing][alg-hashing]             |                              |
+| [Random Numbers][alg-rand]         | [jsw\_rand](jsw\_rand)       |
+| [Sorting][alg-sorting]             |                              |
 
 ### Miscellaneous
 
-* [Pointers][pointers]
-* [Windows Services Simplified][winservice]
+* [Pointers][msc-pointers]
+* [Windows Services Simplified][msc-winservice]
 
 ## Articles
 
-* [Asymptotic Notation][bigo]
-* [atoi() is evil!][atoi]
-* [Using rand()][rand]
+* [Asymptotic Notation][art-bigo]
+* [atoi() is evil!][art-atoi]
+* [Using rand()][art-rand]
 
 ## Licensing
 
@@ -57,20 +59,20 @@ the public domain, as stated [here][1].  (Despite the contradictory
 [3]: https://github.github.com/gfm/
 [4]: https://pandoc.org/
 
-[avl]: Tutorials/jsw_tut_avl.md
-[andersson]: Tutorials/jsw_tut_andersson.md
-[trie1]: Tutorials/jsw_tut_trie1.md
-[bst1]: Tutorials/jsw_tut_bst1.md
-[bst2]: Tutorials/jsw_tut_bst2.md
-[hashtable]: Tutorials/jsw_tut_hashtable.md
-[linklist]: Tutorials/jsw_tut_linklist.md
-[rbtree]: Tutorials/jsw_tut_rbtree.md
-[skip]: Tutorials/jsw_tut_skip.md
-[hashing]: Tutorials/jsw_tut_hashing.md
-[rand]: Tutorials/jsw_tut_rand.md
-[sorting]: Tutorials/jsw_tut_sorting.md
-[pointers]: Tutorials/jsw_tut_pointers.md
-[winservice]: Tutorials/jsw_tut_winservice.md
-[bigo]: Articles/jsw_art_bigo.md
-[rand]: Articles/jsw_art_rand.md
-[atoi]: Articles/jsw_art_atoi.md
+[dst-avl]: Tutorials/jsw_tut_avl.md
+[dst-andersson]: Tutorials/jsw_tut_andersson.md
+[dst-trie1]: Tutorials/jsw_tut_trie1.md
+[dst-bst1]: Tutorials/jsw_tut_bst1.md
+[dst-bst2]: Tutorials/jsw_tut_bst2.md
+[dst-hashtable]: Tutorials/jsw_tut_hashtable.md
+[dst-linklist]: Tutorials/jsw_tut_linklist.md
+[dst-rbtree]: Tutorials/jsw_tut_rbtree.md
+[dst-skip]: Tutorials/jsw_tut_skip.md
+[alg-hashing]: Tutorials/jsw_tut_hashing.md
+[alg-rand]: Tutorials/jsw_tut_rand.md
+[alg-sorting]: Tutorials/jsw_tut_sorting.md
+[msc-pointers]: Tutorials/jsw_tut_pointers.md
+[msc-winservice]: Tutorials/jsw_tut_winservice.md
+[art-bigo]: Articles/jsw_art_bigo.md
+[art-rand]: Articles/jsw_art_rand.md
+[art-atoi]: Articles/jsw_art_atoi.md
