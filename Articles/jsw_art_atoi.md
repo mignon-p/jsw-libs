@@ -1,4 +1,4 @@
-# atoi() is evil\!
+# `atoi()` is evil\!
 
   
 
@@ -8,25 +8,27 @@ integer and converts it to `int`? Well, quite a number of things are
 wrong, ranging from the practical to the theoretical. But let's start
 with an example of usage to truly highlight the issues:
 
-    #include <stdio.h>
-    #include <stdlib.h>
-    
-    int main(void)
+```c
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void)
+{
+    char buf[BUFSIZ];
+
+    fputs("Enter an integer: ", stdout);
+    fflush(stdout);
+
+    if (fgets(buf, sizeof buf, stdin) != NULL)
     {
-        char buf[BUFSIZ];
-    
-        fputs("Enter an integer: ", stdout);
-        fflush(stdout);
-    
-        if (fgets(buf, sizeof buf, stdin) != NULL)
-        {
-            int value = atoi(buf);
-    
-            printf("%d\n", value);
-        }
-    
-        return 0;
+        int value = atoi(buf);
+
+        printf("%d\n", value);
     }
+
+    return 0;
+}
+```
 
 "So what's the problem?", you might ask. The problem is that this code
 is subtly broken. `atoi` makes two very big assumptions indeed:
@@ -55,66 +57,68 @@ member of this hall of shame is `gets`. Unlike `gets`, which cannot be
 made safe, `atoi` can be used safely by thoroughly validating the string
 before passing it in:
 
-    #include <ctype.h>
-    #include <limits.h>
-    #include <stdbool.h>
-    #include <stdio.h>
-    #include <stdlib.h>
-    #include <string.h>
-    
-    bool is_valid_int(const char *s);
-    
-    int main(void)
+```c
+#include <ctype.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+bool is_valid_int(const char *s);
+
+int main(void)
+{
+    char buf[BUFSIZ];
+
+    fputs("Enter an integer: ", stdout);
+    fflush(stdout);
+
+    if (fgets(buf, sizeof buf, stdin) != NULL)
     {
-        char buf[BUFSIZ];
-    
-        fputs("Enter an integer: ", stdout);
-        fflush(stdout);
-    
-        if (fgets(buf, sizeof buf, stdin) != NULL)
+        buf[strcspn(buf, "\n")] = '\0'; // Conditionally trim any newline
+
+        if (is_valid_int(buf))
         {
-            buf[strcspn(buf, "\n")] = '\0'; // Conditionally trim any newline
-    
-            if (is_valid_int(buf))
-            {
-                int value = atoi(buf);
-    
-                printf("%d\n", value);
-            }
+            int value = atoi(buf);
+
+            printf("%d\n", value);
         }
-    
-        return 0;
     }
-    
-    bool is_valid_int(const char *s)
+
+    return 0;
+}
+
+bool is_valid_int(const char *s)
+{
+    long long temp = 0;
+    bool negative = false;
+
+    if (*s != '\0' && (*s == '-' || *s == '+'))
     {
-        long long temp = 0;
-        bool negative = false;
-    
-        if (*s != '\0' && (*s == '-' || *s == '+'))
-        {
-            negative = *s++ == '-';
-        }
-    
-        while (*s != '\0')
-        {
-            if (!isdigit((unsigned char)*s))
-            {
-                return false;
-            }
-    
-            temp = 10 * temp + (*s - '0');
-    
-            if ((!negative && temp > INT_MAX) || (negative && -temp < INT_MIN))
-            {
-                return false;
-            }
-    
-            ++s;
-        }
-    
-        return true;
+        negative = *s++ == '-';
     }
+
+    while (*s != '\0')
+    {
+        if (!isdigit((unsigned char)*s))
+        {
+            return false;
+        }
+
+        temp = 10 * temp + (*s - '0');
+
+        if ((!negative && temp > INT_MAX) || (negative && -temp < INT_MIN))
+        {
+            return false;
+        }
+
+        ++s;
+    }
+
+    return true;
+}
+```
 
 Aside from being a pain in the butt and easy to get wrong, you'll notice
 that `is_valid_int` performs a string to integer conversion. If you're
@@ -130,36 +134,38 @@ NULL, 10)`, except for the behavior on error. This suggests that
 `strtol` can handle the errors that `atoi` can't, and that's true.
 Here's a safe replacement of `atoi` in the first program using `strtol`:
 
-    #include <errno.h>
-    #include <limits.h>
-    #include <stdio.h>
-    #include <stdlib.h>
-    
-    int main(void)
+```c
+#include <errno.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void)
+{
+    char buf[BUFSIZ];
+
+    fputs("Enter an integer: ", stdout);
+    fflush(stdout);
+
+    if (fgets(buf, sizeof buf, stdin) != NULL)
     {
-        char buf[BUFSIZ];
-    
-        fputs("Enter an integer: ", stdout);
-        fflush(stdout);
-    
-        if (fgets(buf, sizeof buf, stdin) != NULL)
+        char *end = NULL;
+
+        errno = 0;
+
+        long temp = strtol(buf, &end, 10);
+
+        if (end != buf && errno != ERANGE && temp >= INT_MIN && temp <= INT_MAX)
         {
-            char *end = NULL;
-    
-            errno = 0;
-    
-            long temp = strtol(buf, &end, 10);
-    
-            if (end != buf && errno != ERANGE && temp >= INT_MIN && temp <= INT_MAX)
-            {
-                int value = (int)temp;
-    
-                printf("%d\n", value);
-            }
+            int value = (int)temp;
+
+            printf("%d\n", value);
         }
-    
-        return 0;
     }
+
+    return 0;
+}
+```
 
 The first part of the test after `strtol` returns is to see if any
 characters were converted. If not, the string isn't a valid integer.
@@ -182,219 +188,223 @@ already safe\!" That may be true. In fact, in [my standard
 library](https://storage.googleapis.com/google-code-archive-source/v2/code.google.com/c-standard-library/source-archive.zip),
 that's exactly what `atoi` does:
 
-    /*
-        @description:
-            Converts the initial portion of the string pointed to by s to an integer.
-                * Behavior is undefined if the string cannot be represented.
-    */
-    int atoi(const char *s)
-    {
-        return (int)strtol(s, NULL, 10);
-    }
+```c
+/*
+    @description:
+        Converts the initial portion of the string pointed to by s to an integer.
+            * Behavior is undefined if the string cannot be represented.
+*/
+int atoi(const char *s)
+{
+    return (int)strtol(s, NULL, 10);
+}
+```
 
 `atoi` defers to `strtol`, which in turn defers to `strtoull`:
 
-    /*
-        @description:
-            Converts the initial portion of the string pointed to by s to an integer.
-    */
-    long strtol(const char * restrict s, char ** restrict end, int base)
-    {
-        unsigned long long temp;
-        const char *it = s;
-    
-        /* Skip leading whitespace (looking for a sign) */
-        while (isspace(*it))
-            ++it;
-    
-        /* Using the original pointer because we must return it on failure */
-        temp = strtoull(s, end, base);
-    
-        /* Handle underflow/overflow */
-        if (*it == '-' && temp <= LONG_MAX) {
-            errno = ERANGE;
-            return LONG_MIN;
-        }
-        else if (*it != '-' && temp >= LONG_MAX) {
-            errno = ERANGE;
-            return LONG_MAX;
-        }
-    
-        return (long)temp;
+```c
+/*
+    @description:
+        Converts the initial portion of the string pointed to by s to an integer.
+*/
+long strtol(const char * restrict s, char ** restrict end, int base)
+{
+    unsigned long long temp;
+    const char *it = s;
+
+    /* Skip leading whitespace (looking for a sign) */
+    while (isspace(*it))
+        ++it;
+
+    /* Using the original pointer because we must return it on failure */
+    temp = strtoull(s, end, base);
+
+    /* Handle underflow/overflow */
+    if (*it == '-' && temp <= LONG_MAX) {
+        errno = ERANGE;
+        return LONG_MIN;
     }
-    
-    /*
-        @description:
-            Converts the initial portion of the string pointed to by s to an integer.
-    */
-    unsigned long long strtoull(const char * restrict s, char ** restrict end, int base)
-    {
-        const char *digits = "0123456789abcdefghijklmnopqrstuvwxyz";
-        unsigned long long temp = 0, prev = 0;
-        const char *it = s, *match, *num_end;
-        char *sep = localeconv()->thousands_sep;
-        size_t sep_len = strlen(sep);
-        int sign = 0, n;
-    
-        /* Skip leading whitespace */
-        while (isspace(*it))
-            ++it;
-    
-        /* Check for and skip over any sign */
-        if (*it == '-' || *it == '+')
-            sign = (*it++ == '-');
-    
-        /* Handle unrealistic bases (excluding 0 because it has special meaning) */
-        if (base < 0 || base == 2 || base > _BASE_MAX) {
-            if (end)
-                *end = (char*)s;
-    
-            return 0;
+    else if (*it != '-' && temp >= LONG_MAX) {
+        errno = ERANGE;
+        return LONG_MAX;
+    }
+
+    return (long)temp;
+}
+
+/*
+    @description:
+        Converts the initial portion of the string pointed to by s to an integer.
+*/
+unsigned long long strtoull(const char * restrict s, char ** restrict end, int base)
+{
+    const char *digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+    unsigned long long temp = 0, prev = 0;
+    const char *it = s, *match, *num_end;
+    char *sep = localeconv()->thousands_sep;
+    size_t sep_len = strlen(sep);
+    int sign = 0, n;
+
+    /* Skip leading whitespace */
+    while (isspace(*it))
+        ++it;
+
+    /* Check for and skip over any sign */
+    if (*it == '-' || *it == '+')
+        sign = (*it++ == '-');
+
+    /* Handle unrealistic bases (excluding 0 because it has special meaning) */
+    if (base < 0 || base == 2 || base > _BASE_MAX) {
+        if (end)
+            *end = (char*)s;
+
+        return 0;
+    }
+
+    /* Extrapolate the base if it's 0 */
+    if (base == 0) {
+        if (*it == '0' && (it[1] && tolower(it[1]) == 'x')) {
+            base = 16;
+
+            /* Skip a leading 0x because it'll interfere later */
+            it += 2;
         }
-    
-        /* Extrapolate the base if it's 0 */
-        if (base == 0) {
-            if (*it == '0' && (it[1] && tolower(it[1]) == 'x')) {
-                base = 16;
-    
-                /* Skip a leading 0x because it'll interfere later */
-                it += 2;
-            }
-            else if (*it == '0') {
-                base = 8;
+        else if (*it == '0') {
+            base = 8;
+        }
+        else {
+            base = 10;
+        }
+    }
+    else {
+        if (base == 16 && *it == '0' && (it[1] && tolower(it[1]) == 'x')) {
+            /* Skip a leading 0x because it'll interfere later */
+            it += 2;
+        }
+    }
+
+    /* Skip leading zeros */
+    while (*it == '0')
+        ++it;
+
+    /* Find the end of the first locale-friendly numeric string */
+    num_end = integer_end(it, it + strlen(it), base);
+
+    if (num_end == it) {
+        /* There are no valid groups */
+        if (end)
+            *end = (char*)s;
+
+        return 0;
+    }
+
+    /* Build the value */
+    for (n = 0; it != num_end; ++n, ++it) {
+        if (memcmp(it, sep, sep_len) == 0)
+            it += sep_len; /* Skip over a thousands separator */
+
+        match = (const char*)memchr(digits, tolower(*it), base);
+        prev = temp;
+        temp = base * temp + (match - digits);
+    }
+
+    if (n == 0) {
+        /* No valid digits in the string */
+        if (end)
+            *end = (char*)s;
+
+        return 0;
+    }
+    else {
+        match = (const char*)memchr(digits, tolower(it[-1]), base);
+
+        if (end)
+            *end = (char*)it;
+
+        /* Check for overflow */
+        if (n >= max_digits(sizeof(unsigned long long) * CHAR_BIT, base) || (temp - (match - digits)) / base != prev)
+        {
+            errno = ERANGE;
+            return ULLONG_MAX;
+        }
+
+        if (sign)
+            temp = -temp;
+
+        return temp;
+    }
+}
+
+/*
+    @description:
+        Locates the end of the first valid integer string starting at s.
+        This function is aware of the current locale's LC_NUMERIC setting.
+*/
+const char *integer_end(const char *first, const char *last, int base)
+{
+    char *grouping = localeconv()->grouping;
+    int group_len = 0, group_size = *grouping;
+
+    const char *end = last;
+    const char *it = end - 1;
+
+    for (;;) {
+        if (it == first && group_size && _digitvalue(*end, base) != -1)
+            end = first;
+        else if (it != first && group_size && ++group_len == group_size) {
+            /* Check for a group separator */
+            if (it - 1 == first || it[-1] != *localeconv()->thousands_sep) {
+                /* Invalid group: reset grouping, mark the end and proceed */
+                grouping = localeconv()->grouping;
+                group_size = *grouping;
+                group_len = 0;
+                end = it; /* Save 1 past the last valid character */
             }
             else {
-                base = 10;
-            }
-        }
-        else {
-            if (base == 16 && *it == '0' && (it[1] && tolower(it[1]) == 'x')) {
-                /* Skip a leading 0x because it'll interfere later */
-                it += 2;
-            }
-        }
-    
-        /* Skip leading zeros */
-        while (*it == '0')
-            ++it;
-    
-        /* Find the end of the first locale-friendly numeric string */
-        num_end = integer_end(it, it + strlen(it), base);
-    
-        if (num_end == it) {
-            /* There are no valid groups */
-            if (end)
-                *end = (char*)s;
-    
-            return 0;
-        }
-    
-        /* Build the value */
-        for (n = 0; it != num_end; ++n, ++it) {
-            if (memcmp(it, sep, sep_len) == 0)
-                it += sep_len; /* Skip over a thousands separator */
-    
-            match = (const char*)memchr(digits, tolower(*it), base);
-            prev = temp;
-            temp = base * temp + (match - digits);
-        }
-    
-        if (n == 0) {
-            /* No valid digits in the string */
-            if (end)
-                *end = (char*)s;
-    
-            return 0;
-        }
-        else {
-            match = (const char*)memchr(digits, tolower(it[-1]), base);
-    
-            if (end)
-                *end = (char*)it;
-    
-            /* Check for overflow */
-            if (n >= max_digits(sizeof(unsigned long long) * CHAR_BIT, base) || (temp - (match - digits)) / base != prev)
-            {
-                errno = ERANGE;
-                return ULLONG_MAX;
-            }
-    
-            if (sign)
-                temp = -temp;
-    
-            return temp;
-        }
-    }
-    
-    /*
-        @description:
-            Locates the end of the first valid integer string starting at s.
-            This function is aware of the current locale's LC_NUMERIC setting.
-    */
-    const char *integer_end(const char *first, const char *last, int base)
-    {
-        char *grouping = localeconv()->grouping;
-        int group_len = 0, group_size = *grouping;
-    
-        const char *end = last;
-        const char *it = end - 1;
-    
-        for (;;) {
-            if (it == first && group_size && _digitvalue(*end, base) != -1)
-                end = first;
-            else if (it != first && group_size && ++group_len == group_size) {
-                /* Check for a group separator */
-                if (it - 1 == first || it[-1] != *localeconv()->thousands_sep) {
-                    /* Invalid group: reset grouping, mark the end and proceed */
-                    grouping = localeconv()->grouping;
+                /* Valid group: move to the next grouping level */
+                if (*grouping && *++grouping)
                     group_size = *grouping;
-                    group_len = 0;
-                    end = it; /* Save 1 past the last valid character */
-                }
-                else {
-                    /* Valid group: move to the next grouping level */
-                    if (*grouping && *++grouping)
-                        group_size = *grouping;
-    
-                    group_len = 0;
-    
-                    /* Skip over the separator so we don't error on the next iteration */
-                    --it;
-                }
-            }
-            else if ((*it == '-' || *it == '+') && it != first) {
-                /* Invalid sign: reset grouping, mark the end and proceed */
-                grouping = localeconv()->grouping;
-                group_size = *grouping;
+
                 group_len = 0;
-                end = it; /* Save 1 past the last valid character */
+
+                /* Skip over the separator so we don't error on the next iteration */
+                --it;
             }
-            else if (!(*it == '-' || *it == '+') && _digitvalue(*it, base) == -1) {
-                /* Invalid digit: reset grouping, mark the end and proceed */
-                grouping = localeconv()->grouping;
-                group_size = *grouping;
-                group_len = 0;
-                end = it; /* Save 1 past the last valid character */
-            }
-    
-            if (it == first)
-                break;
-    
-            --it;
         }
-    
-        return end;
+        else if ((*it == '-' || *it == '+') && it != first) {
+            /* Invalid sign: reset grouping, mark the end and proceed */
+            grouping = localeconv()->grouping;
+            group_size = *grouping;
+            group_len = 0;
+            end = it; /* Save 1 past the last valid character */
+        }
+        else if (!(*it == '-' || *it == '+') && _digitvalue(*it, base) == -1) {
+            /* Invalid digit: reset grouping, mark the end and proceed */
+            grouping = localeconv()->grouping;
+            group_size = *grouping;
+            group_len = 0;
+            end = it; /* Save 1 past the last valid character */
+        }
+
+        if (it == first)
+            break;
+
+        --it;
     }
-    
-    /*
-        @description:
-            Calculates the maximum number of decimal digits that can be stored
-            in a value of up to the specified bits in the specified base.
-    */
-    int max_digits(int bits, int base)
-    {
-        return (base > 1) ? 1 + (int)(log(pow(2.0, bits)) / log((double)base)) : 0;
-    }
+
+    return end;
+}
+
+/*
+    @description:
+        Calculates the maximum number of decimal digits that can be stored
+        in a value of up to the specified bits in the specified base.
+*/
+int max_digits(int bits, int base)
+{
+    return (base > 1) ? 1 + (int)(log(pow(2.0, bits)) / log((double)base)) : 0;
+}
+```
 
 I included the full code to highlight that a string to integer
 conversion is far more complex than the sub-20 line function most people
