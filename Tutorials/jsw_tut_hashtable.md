@@ -17,10 +17,12 @@ any object into an integral index suitable for subscripting the array.
 For example, to index an array with strings representing the numbers 0
 through 9, a hash function might look like this:
 
-    unsigned hash(const char key)
-    {
-        return key - '0';
-    }
+```c
+unsigned hash(const char key)
+{
+    return key - '0';
+}
+```
 
 The first character is expected to always be '0', '1', '2', '3', '4',
 '5', '6', '7', '8', or '9', and the trick of subtracting '0' from one of
@@ -44,104 +46,106 @@ hashed to the same index. This is called a collision, and properly
 handling collisions is where most of the effort in implementing hash
 tables comes in. Here is the example program:
 
-    #include <stdio.h>
-    
-    /* Find the number of elements in an array */
-    #define length(a) (sizeof a / sizeof *a)
-    
-    static size_t hash(const char key)
+```c
+#include <stdio.h>
+
+/* Find the number of elements in an array */
+#define length(a) (sizeof a / sizeof *a)
+
+static size_t hash(const char key)
+{
+    return key - '0';
+}
+
+static void jsw_flush(void);
+static int get_digit(char *ch);
+
+static void fill_table(char table[]);
+static void show_table(const char table[], size_t size);
+
+int main(void)
+{
+    /* This is our hash table */
+    char table[10] = { 0 };
+
+    fill_table(table);
+    show_table(table, length(table));
+
+    return 0;
+}
+
+/*
+Discard remaining characters in stdin
+up to the next newline or end-of-file
+*/
+void jsw_flush(void)
+{
+    int ch;
+
+    do
     {
-        return key - '0';
+        ch = getchar();
+    } while (ch != '\n' && ch != EOF);
+
+    clearerr(stdin);
+}
+
+/*
+Get a single character digit, '0'-'9'.
+Return 1 on success, 0 on input error,
+end-of-file, or invalid input
+*/
+int get_digit(char *ch)
+{
+    int rc;
+
+    printf("Enter a single digit : ");
+    fflush(stdout);
+
+    if (rc = scanf(" % 1[0123456789]", ch) == 1)
+    {
+        /* At least a newline is left over; clear it all */
+        jsw_flush();
     }
-    
-    static void jsw_flush(void);
-    static int get_digit(char *ch);
-    
-    static void fill_table(char table[]);
-    static void show_table(const char table[], size_t size);
-    
-    int main(void)
+
+    return rc;
+}
+
+/* Populate the hash table */
+void fill_table(char table[])
+{
+    char ch;
+
+    while (get_digit(&ch))
     {
-        /* This is our hash table */
-        char table[10] = { 0 };
-    
-        fill_table(table);
-        show_table(table, length(table));
-    
-        return 0;
-    }
-    
-    /*
-    Discard remaining characters in stdin
-    up to the next newline or end-of-file
-    */
-    void jsw_flush(void)
-    {
-        int ch;
-    
-        do
+        /* Create an index from the character */
+        unsigned i = hash(ch);
+
+        if (table[i] != 0)
         {
-            ch = getchar();
-        } while (ch != '\n' && ch != EOF);
-    
-        clearerr(stdin);
-    }
-    
-    /*
-    Get a single character digit, '0'-'9'.
-    Return 1 on success, 0 on input error,
-    end-of-file, or invalid input
-    */
-    int get_digit(char *ch)
-    {
-        int rc;
-    
-        printf("Enter a single digit : ");
-        fflush(stdout);
-    
-        if (rc = scanf(" % 1[0123456789]", ch) == 1)
-        {
-            /* At least a newline is left over; clear it all */
-            jsw_flush();
+            /* Duplicate indexes are called collisions */
+            printf("That index has been filled\n");
         }
-    
-        return rc;
-    }
-    
-    /* Populate the hash table */
-    void fill_table(char table[])
-    {
-        char ch;
-    
-        while (get_digit(&ch))
+        else
         {
-            /* Create an index from the character */
-            unsigned i = hash(ch);
-    
-            if (table[i] != 0)
-            {
-                /* Duplicate indexes are called collisions */
-                printf("That index has been filled\n");
-            }
-            else
-            {
-                /* The element is empty; fill it in */
-                table[i] = ch;
-            }
-        }
-    }
-    
-    /* Display the contents of the hash table */
-    void show_table(const char table[], size_t size)
-    {
-        size_t i;
-    
-        for (i = 0; i < size; i++)
-        {
-            /* Mark empty elements as 'null' with the ~ character */
-            printf("%c\n", table[i] != 0 ? table[i] : '~');
+            /* The element is empty; fill it in */
+            table[i] = ch;
         }
     }
+}
+
+/* Display the contents of the hash table */
+void show_table(const char table[], size_t size)
+{
+    size_t i;
+
+    for (i = 0; i < size; i++)
+    {
+        /* Mark empty elements as 'null' with the ~ character */
+        printf("%c\n", table[i] != 0 ? table[i] : '~');
+    }
+}
+```
 
 Unfortunately, not all cases are as clean cut as this contrived example.
 In reality, a hash function will be expected to convert a much broader
@@ -156,10 +160,12 @@ are not equal may be mapped to the same index. For example, if we
 continue to use an array of 10, but want to hash all values in the range
 of \[0,20), we might use a hash function like the following:
 
-    size_t hash(const unsigned int key)
-    {
-        return key % 10;
-    }
+```c
+size_t hash(const unsigned int key)
+{
+    return key % 10;
+}
+```
 
 This will cause collisions because there's now way to fit twenty
 possible values into only ten indices. For example, 0 and 10 will both
@@ -192,7 +198,9 @@ masking operation. For example, to force the range of any value into
 eight bits, you simply use the bitwise **AND** operation on a mask of
 **0xff** (hexadecimal for 255):
 
-    table[hash(key) & 0xff]
+```c
+table[hash(key) & 0xff]
+```
 
 This is a fast operation, but it only works with powers of two. If the
 table size is not a power of two, the remainder of division can be used
@@ -203,7 +211,9 @@ than the upper value to include it in the range. This operation is also
 slower in theory than masking (in practice, most compilers will optimize
 both into the same machine code):
 
-    table[hash(key) % 256]
+```c
+table[hash(key) % 256]
+```
 
 When it comes to hash tables, the most recommended table size is any
 prime number. This recommendation is made because hashing in general is
@@ -227,93 +237,97 @@ called resolution by overflow, where an “overflow” table is used to hold
 collisions. Insertion into the hash table is relatively simple with this
 scheme:
 
-    struct hash_table
+```c
+struct hash_table
+{
+    void **table;
+    size_t size;
+};
+
+struct overflow_table
+{
+    void **table;
+    size_t size;
+    size_t last;
+};
+
+int jsw_insert(struct hash_table *table, struct overflow_table *overflow, void *key, size_t size)
+{
+    /* Get an index for the key */
+    size_t h = hash(key, size) % table->size;
+
+    if (table->table[h] != EMPTY)
     {
-        void **table;
-        size_t size;
-    };
-    
-    struct overflow_table
-    {
-        void **table;
-        size_t size;
-        size_t last;
-    };
-    
-    int jsw_insert(struct hash_table *table, struct overflow_table *overflow, void *key, size_t size)
-    {
-        /* Get an index for the key */
-        size_t h = hash(key, size) % table->size;
-    
-        if (table->table[h] != EMPTY)
+        /* The index is being used, send the key to overflow */
+        if (overflow->last == overflow->size)
         {
-            /* The index is being used, send the key to overflow */
-            if (overflow->last == overflow->size)
-            {
-                /* The overflow is full, throw an error */
-                return 0;
-            }
-    
-            overflow->table[overflow->last++] = key;
+            /* The overflow is full, throw an error */
+            return 0;
         }
-        else
-        {
-            /* The index is free; fill it in */
-            table->table[h] = key;
-        }
-    
-        return 1;
+
+        overflow->table[overflow->last++] = key;
     }
+    else
+    {
+        /* The index is free; fill it in */
+        table->table[h] = key;
+    }
+
+    return 1;
+}
+```
 
 Rather than use a cursor to mark the end of the overflow table, we can
 also search from the beginning each time. This makes deletions simpler,
 but also complicates updating the overflow table:
 
-    struct hash_table
+```c
+struct hash_table
+{
+    void **table;
+    size_t size;
+};
+
+struct overflow_table
+{
+    void **table;
+    size_t size;
+};
+
+int jsw_insert(struct hash_table *table, struct overflow_table *overflow, void *key, size_t size)
+{
+    /* Get an index for the key */
+    size_t h = hash(key, size) % table->size;
+
+    if (table->table[h] != EMPTY)
     {
-        void **table;
-        size_t size;
-    };
-    
-    struct overflow_table
-    {
-        void **table;
-        size_t size;
-    };
-    
-    int jsw_insert(struct hash_table *table, struct overflow_table *overflow, void *key, size_t size)
-    {
-        /* Get an index for the key */
-        size_t h = hash(key, size) % table->size;
-    
-        if (table->table[h] != EMPTY)
+        size_t i;
+
+        /* Find the first open overflow slot */
+        for (i = 0; i < overflow->size; i++)
         {
-            size_t i;
-    
-            /* Find the first open overflow slot */
-            for (i = 0; i < overflow->size; i++)
+            if (overflow->table[i] == EMPTY)
             {
-                if (overflow->table[i] == EMPTY)
-                {
-                    overflow->table[i] = key;
-                    break;
-                }
-            }
-    
-            if (i == overflow->size)
-            {
-                /* There are no open slots; throw an error */
-                return 0;
+                overflow->table[i] = key;
+                break;
             }
         }
-        else
+
+        if (i == overflow->size)
         {
-            /* The index is free; fill it in */
-            table->table[h] = key;
+            /* There are no open slots; throw an error */
+            return 0;
         }
-    
-        return 1;
     }
+    else
+    {
+        /* The index is free; fill it in */
+        table->table[h] = key;
+    }
+
+    return 1;
+}
+```
 
 However, this solution is brittle at best because insertions will be
 slow if there is a collision with an overflow table that is large and
@@ -370,41 +384,43 @@ you index the array, it is just a matter of searching, inserting, or
 removing in a linked list. Assuming an unordered chain, the search is
 almost trivial...almost:
 
-    struct jsw_node
+```c
+struct jsw_node
+{
+    void *key;
+    struct jsw_node *next;
+};
+
+struct hash_table
+{
+    struct jsw_node **table;
+    size_t size;
+};
+
+int jsw_find(struct hash_table *table, void *key, size_t size)
+{
+    /* Get an index for the key */
+    size_t h = hash(key, size) % table->size;
+
+    if (table->table[h] != EMPTY)
     {
-        void *key;
-        struct jsw_node *next;
-    };
-    
-    struct hash_table
-    {
-        struct jsw_node **table;
-        size_t size;
-    };
-    
-    int jsw_find(struct hash_table *table, void *key, size_t size)
-    {
-        /* Get an index for the key */
-        size_t h = hash(key, size) % table->size;
-    
-        if (table->table[h] != EMPTY)
+        /* Find the matching key in the chain, if any */
+        struct jsw_node *it = table->table[h];
+
+        while (it != NULL)
         {
-            /* Find the matching key in the chain, if any */
-            struct jsw_node *it = table->table[h];
-    
-            while (it != NULL)
+            if (compare(key, it->key) == 0)
             {
-                if (compare(key, it->key) == 0)
-                {
-                    return 1;
-                }
-    
-                it = it->next;
+                return 1;
             }
+
+            it = it->next;
         }
-    
-        return 0;
     }
+
+    return 0;
+}
+```
 
 Insertion into a separately chained hash table can be even simpler than
 the search if duplicates are allowed, as the chain does not need to be
@@ -413,57 +429,59 @@ and push a new node with the key and value onto the front. If duplicates
 are not allowed, an extra search needs to be performed to see if the key
 is already present in the chain:
 
-    struct jsw_node
+```c
+struct jsw_node
+{
+    void *key;
+    struct jsw_node *next;
+};
+
+struct hash_table
+{
+    struct jsw_node **table;
+    size_t size;
+};
+
+int jsw_insert(struct hash_table *table, void *key, size_t size, int allow_duplicates)
+{
+    struct jsw_node *it;
+
+    /* Get an index for the key */
+    size_t h = hash(key, size) % table->size;
+
+    if (!allow_duplicates)
     {
-        void *key;
-        struct jsw_node *next;
-    };
-    
-    struct hash_table
-    {
-        struct jsw_node **table;
-        size_t size;
-    };
-    
-    int jsw_insert(struct hash_table *table, void *key, size_t size, int allow_duplicates)
-    {
-        struct jsw_node *it;
-    
-        /* Get an index for the key */
-        size_t h = hash(key, size) % table->size;
-    
-        if (!allow_duplicates)
+        /* Search for any duplicate keys */
+        it = table->table[h];
+
+        while (it != NULL)
         {
-            /* Search for any duplicate keys */
-            it = table->table[h];
-    
-            while (it != NULL)
+            if (compare(key, it->key) == 0)
             {
-                if (compare(key, it->key) == 0)
-                {
-                    /* Stop the insertion if a duplicate is found */
-                    return 0;
-                }
-    
-                it = it->next;
+                /* Stop the insertion if a duplicate is found */
+                return 0;
             }
+
+            it = it->next;
         }
-    
-        /* Create a new node for the chain */
-        it = malloc(sizeof *it);
-    
-        if (it == NULL)
-        {
-            return 0;
-        }
-    
-        /* Attach the new node to the front of the chain */
-        it->key = key;
-        it->next = table->table[h];
-        table->table[h] = it;
-    
-        return 1;
     }
+
+    /* Create a new node for the chain */
+    it = malloc(sizeof *it);
+
+    if (it == NULL)
+    {
+        return 0;
+    }
+
+    /* Attach the new node to the front of the chain */
+    it->key = key;
+    it->next = table->table[h];
+    table->table[h] = it;
+
+    return 1;
+}
+```
 
 When removing from a separately chained hash table, a search is required
 for the old key. Fortunately, this is the hardest part of the algorithm
@@ -474,46 +492,48 @@ key rather than simply the first. For conciseness, I'll leave the
 remove\_node function as an exercise. It's nothing more than a normal
 linked list removal algorithm:
 
-    struct jsw_node
+```c
+struct jsw_node
+{
+    void *key;
+    struct jsw_node *next;
+};
+
+struct hash_table
+{
+    struct jsw_node **table;
+    size_t size;
+};
+
+int jsw_remove(struct hash_table *table, void *key, size_t size, int allow_duplicates)
+{
+    int item_found = 0;
+
+    /* Get an index for the key */
+    size_t h = hash(key, size) % table->size;
+
+    if (table->table[h] == NULL)
     {
-        void *key;
-        struct jsw_node *next;
-    };
-    
-    struct hash_table
-    {
-        struct jsw_node **table;
-        size_t size;
-    };
-    
-    int jsw_remove(struct hash_table *table, void *key, size_t size, int allow_duplicates)
-    {
-        int item_found = 0;
-    
-        /* Get an index for the key */
-        size_t h = hash(key, size) % table->size;
-    
-        if (table->table[h] == NULL)
-        {
-            /* The chain is empty, no more work needed */
-            return 0;
-        }
-    
-        /* Always try to remove the first occurrence */
-        item_found = remove_node(&table->table[h], key);
-    
-        if (item_found && allow_duplicates)
-        {
-            /* Try to remove all subsequent occurrences */
-            while (remove_node(&table->table[h], key))
-                ;
-    
-            /* At least one was found if we got here */
-            item_found = true;
-        }
-    
-        return item_found;
+        /* The chain is empty, no more work needed */
+        return 0;
     }
+
+    /* Always try to remove the first occurrence */
+    item_found = remove_node(&table->table[h], key);
+
+    if (item_found && allow_duplicates)
+    {
+        /* Try to remove all subsequent occurrences */
+        while (remove_node(&table->table[h], key))
+            ;
+
+        /* At least one was found if we got here */
+        item_found = true;
+    }
+
+    return item_found;
+}
+```
 
 Also keep in mind that this is a very basic algorithm and some fairly
 simple optimizations can improve the performance. For example, rather
@@ -594,34 +614,36 @@ size.
 
 Searching with linear probing is quite literally, trivial:
 
-    struct hash_table
+```c
+struct hash_table
+{
+    void **table;
+    size_t size;
+};
+
+int jsw_find(struct hash_table *table, void *key, size_t size)
+{
+    /* Get the initial index for the key */
+    size_t h = hash(key, size) % table->size;
+
+    /* Potentially infinite loop if the table is full */
+    while (table->table[h] != EMPTY)
     {
-        void **table;
-        size_t size;
-    };
-    
-    int jsw_find(struct hash_table *table, void *key, size_t size)
-    {
-        /* Get the initial index for the key */
-        size_t h = hash(key, size) % table->size;
-    
-        /* Potentially infinite loop if the table is full */
-        while (table->table[h] != EMPTY)
+        if (compare(key, table->table[h]) == 0)
         {
-            if (compare(key, table->table[h]) == 0)
-            {
-                return 1;
-            }
-    
-            /* Move forward by 1, wrap if necessary */
-            if (++h == table->size)
-            {
-                h = 0;
-            }
+            return 1;
         }
-    
-        return 0;
+
+        /* Move forward by 1, wrap if necessary */
+        if (++h == table->size)
+        {
+            h = 0;
+        }
     }
+
+    return 0;
+}
+```
 
 The wrap around is performed by incrementing the index and resetting it
 to 0 if it hits the table size. This is actually a naive implementation,
@@ -659,34 +681,36 @@ works because the probes will always end up going over a previously
 entered duplicate before hitting an empty slot. However, that does
 introduce a problem with deletion that we'll look at shortly:
 
-    struct hash_table
+```c
+struct hash_table
+{
+    void **table;
+    size_t size;
+};
+
+int jsw_insert(struct hash_table *table, void *key, size_t size, int allow_duplicates)
+{
+    /* Get the initial index for the key */
+    size_t h = hash(key, size) % table->size;
+
+    while (table->table[h] != EMPTY)
     {
-        void **table;
-        size_t size;
-    };
-    
-    int jsw_insert(struct hash_table *table, void *key, size_t size, int allow_duplicates)
-    {
-        /* Get the initial index for the key */
-        size_t h = hash(key, size) % table->size;
-    
-        while (table->table[h] != EMPTY)
+        if (!allow_duplicates && compare(key, table->table[h]) == 0)
         {
-            if (!allow_duplicates && compare(key, table->table[h]) == 0)
-            {
-                return 0;
-            }
-    
-            if (++h == table->size)
-            {
-                h = 0;
-            }
+            return 0;
         }
-    
-        table[h] = key;
-    
-        return 1;
+
+        if (++h == table->size)
+        {
+            h = 0;
+        }
     }
+
+    table[h] = key;
+
+    return 1;
+}
+```
 
 Removal in any open addressing strategy is where things get interesting.
 A direct removal is not possible because future probes could rely on the
@@ -702,41 +726,43 @@ schemes is to mark a bucket as deleted in such a way so that searches
 will not fail. This is a rather hackish solution, but it works well in
 practice:
 
-    struct hash_table
+```c
+struct hash_table
+{
+    void **table;
+    size_t size;
+};
+
+int jsw_remove(struct hash_table *table, void *key, size_t size, int allow_duplicates)
+{
+    int item_found = 0;
+
+    /* Get the initial index for the key */
+    size_t h = hash(key, size) % table->size;
+
+    while (table[h] != EMPTY)
     {
-        void **table;
-        size_t size;
-    };
-    
-    int jsw_remove(struct hash_table *table, void *key, size_t size, int allow_duplicates)
-    {
-        int item_found = 0;
-    
-        /* Get the initial index for the key */
-        size_t h = hash(key, size) % table->size;
-    
-        while (table[h] != EMPTY)
+        if (compare(key, table->table[h]) == 0)
         {
-            if (compare(key, table->table[h]) == 0)
+            item_found = 1;
+            table[h] = DELETED;
+
+            if (!allow_duplicates)
             {
-                item_found = 1;
-                table[h] = DELETED;
-    
-                if (!allow_duplicates)
-                {
-                    /* No need to keep searching the cluster */
-                    break;
-                }
-            }
-    
-            if (++h == table->size)
-            {
-                h = 0;
+                /* No need to keep searching the cluster */
+                break;
             }
         }
-    
-        return item_found;
+
+        if (++h == table->size)
+        {
+            h = 0;
+        }
     }
+
+    return item_found;
+}
+```
 
 The catch to this is that if duplicate items are allowed, you can't just
 delete the first occurrence and be satisfied. You have to keep going
@@ -753,34 +779,36 @@ algorithm can safely assume that an EMPTY or DELETED slot marks a valid
 insertion point. Inserting in a DELETED slot won't leave an accidental
 duplicate further along the probe line.
 
-    struct hash_table
+```c
+struct hash_table
+{
+    void **table;
+    size_t size;
+};
+
+int jsw_insert(struct hash_table *table, void *key, size_t size, int allow_duplicates)
+{
+    /* Get the initial index for the key */
+    size_t h = hash(key, size) % table->size;
+
+    while (table->table[h] != EMPTY && table->table[h] != DELETED)
     {
-        void **table;
-        size_t size;
-    };
-    
-    int jsw_insert(struct hash_table *table, void *key, size_t size, int allow_duplicates)
-    {
-        /* Get the initial index for the key */
-        size_t h = hash(key, size) % table->size;
-    
-        while (table->table[h] != EMPTY && table->table[h] != DELETED)
+        if (!allow_duplicates && compare(key, table->table[h]) == 0)
         {
-            if (!allow_duplicates && compare(key, table->table[h]) == 0)
-            {
-                return 0;
-            }
-    
-            if (++h == table->size)
-            {
-                h = 0;
-            }
+            return 0;
         }
-    
-        table[h] = key;
-    
-        return 1;
+
+        if (++h == table->size)
+        {
+            h = 0;
+        }
     }
+
+    table[h] = key;
+
+    return 1;
+}
+```
 
 Occasionally these deleted items will begin to fill the table as they
 take the place of real keys. In that case, the deleted items must be
@@ -798,32 +826,34 @@ search algorithm is only slightly more complicated than linear probing,
 and insertion and deletion are equally simple changes. Just add a step
 and use it to increase the index:
 
-    struct hash_table
+```c
+struct hash_table
+{
+    void **table;
+    size_t size;
+};
+
+int jsw_find(struct hash_table *table, void *key, size_t size)
+{
+    size_t step;
+
+    /* Get the initial index for the key */
+    size_t h = hash(key, size) % table->size;
+
+    for (step = 1; table->table[h] != EMPTY; step++)
     {
-        void **table;
-        size_t size;
-    };
-    
-    int jsw_find(struct hash_table *table, void *key, size_t size)
-    {
-        size_t step;
-    
-        /* Get the initial index for the key */
-        size_t h = hash(key, size) % table->size;
-    
-        for (step = 1; table->table[h] != EMPTY; step++)
+        if (compare(key, table->table[h]) == 0)
         {
-            if (compare(key, table->table[h]) == 0)
-            {
-                return 1;
-            }
-    
-            /* Move forward by quadratically, wrap if necessary */
-            h = (h + (step * step - step) / 2) % table->size;
+            return 1;
         }
-    
-        return 0;
+
+        /* Move forward by quadratically, wrap if necessary */
+        h = (h + (step * step - step) / 2) % table->size;
     }
+
+    return 0;
+}
+```
 
 Quadratic probing alleviates primary clustering because probes are no
 longer close together according to some small constant. Rather, the
@@ -860,33 +890,35 @@ methods discussed so far. So similar, in fact, that I'll show only the
 search algorithm. The insertion and removal algorithms are identical to
 linear probing with the step changes, just like quadratic probing:
 
-    struct hash_table
+```c
+struct hash_table
+{
+    void **table;
+    size_t size;
+};
+
+int jsw_find(struct hash_table *table, void *key, size_t size)
+{
+    /* Get the initial index for the key */
+    size_t h = hash(key, size) % table->size;
+
+    /* Get the step size */
+    size_t step = hash2(key) % (table->size - 1) + 1;
+
+    while (table->table[h] != EMPTY)
     {
-        void **table;
-        size_t size;
-    };
-    
-    int jsw_find(struct hash_table *table, void *key, size_t size)
-    {
-        /* Get the initial index for the key */
-        size_t h = hash(key, size) % table->size;
-    
-        /* Get the step size */
-        size_t step = hash2(key) % (table->size - 1) + 1;
-    
-        while (table->table[h] != EMPTY)
+        if (compare(key, table->table[h]) == 0)
         {
-            if (compare(key, table->table[h]) == 0)
-            {
-                return 1;
-            }
-    
-            /* Move forward by quadratically, wrap if necessary */
-            h = (h + step) % table->size;
+            return 1;
         }
-    
-        return 0;
+
+        /* Move forward by quadratically, wrap if necessary */
+        h = (h + step) % table->size;
     }
+
+    return 0;
+}
+```
 
 #### Coalesced chaining
 
@@ -937,55 +969,57 @@ another, so they are said to coalesce, hence the name, coalesced
 chaining. The code to insert into a coalesced hash table is surprisingly
 short for how convoluted the concept seems at first.
 
-    struct jsw_node
+```c
+struct jsw_node
+{
+    void *key;
+    struct jsw_node *next;
+};
+
+struct hash_table
+{
+    struct jsw_node **table;
+    size_t size;
+    size_t cursor;
+};
+
+int jsw_insert(struct hash_table *table, void *key, size_t size)
+{
+    /* Get an index for the key */
+    size_t h = hash(key, size) % table->size;
+
+    if (table->table[h] == EMPTY)
     {
-        void *key;
-        struct jsw_node *next;
-    };
-    
-    struct hash_table
-    {
-        struct jsw_node **table;
-        size_t size;
-        size_t cursor;
-    };
-    
-    int jsw_insert(struct hash_table *table, void *key, size_t size)
-    {
-        /* Get an index for the key */
-        size_t h = hash(key, size) % table->size;
-    
-        if (table->table[h] == EMPTY)
-        {
-            /* The slot is empty, no more work needed */
-            table->table[h] = key;
-        }
-        else
-        {
-            struct jsw_node *it;
-    
-            /* Find the next open slot */
-            while (table->cursor < table->size && table->table[table->cursor] != EMPTY)
-            {
-                ++table->cursor;
-            }
-    
-            if (table->cursor == table->size)
-            {
-                return 0;
-            }
-    
-            table->table[table->cursor] = key;
-    
-            /* Find the end of the coalesced chain */
-            for (it = table->table[h]; it->next != NULL; it = it->next)
-                ;
-    
-            it->next = table->table[table->cursor];
-        }
-    
-        return 1;
+        /* The slot is empty, no more work needed */
+        table->table[h] = key;
     }
+    else
+    {
+        struct jsw_node *it;
+
+        /* Find the next open slot */
+        while (table->cursor < table->size && table->table[table->cursor] != EMPTY)
+        {
+            ++table->cursor;
+        }
+
+        if (table->cursor == table->size)
+        {
+            return 0;
+        }
+
+        table->table[table->cursor] = key;
+
+        /* Find the end of the coalesced chain */
+        for (it = table->table[h]; it->next != NULL; it = it->next)
+            ;
+
+        it->next = table->table[table->cursor];
+    }
+
+    return 1;
+}
+```
 
 Search with coalesced chaining is identical to separate chaining, but
 removal is not as simple. In fact, because coalesced chaining is
