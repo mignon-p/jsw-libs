@@ -49,11 +49,15 @@ a number returned by `rand` into a smaller range. For example, to roll a
 6 sided die, one would prefer to only receive values in the range of
 \[0, 6). This is often done using the remainder operator:
 
-    int r = rand() % N;
+```c
+int r = rand() % N;
+```
 
 Or if both a lower and upper bound are needed:
 
-    int r = LO + rand() % (HI - LO);
+```c
+int r = LO + rand() % (HI - LO);
+```
 
 Anyone who does this will be rewarded with a seemingly random sequence
 and be thrilled that their clever solution worked. Unfortunately, this
@@ -80,11 +84,15 @@ and any use of `goto` is evil. The solution suggested to get around the
 remainder issue is usually division by `RAND_MAX`. For a range of \[0,
 N), you would do something like this:
 
-    int r = rand() / (RAND_MAX / N + 1);
+```c
+int r = rand() / (RAND_MAX / N + 1);
+```
 
 With the lower and upper bound support looking like this:
 
-    int r = M + rand() / (RAND_MAX / (N - M) + 1);
+```c
+int r = M + rand() / (RAND_MAX / (N - M) + 1);
+```
 
 All is well, right? This produces a seemingly random sequence. The
 seasoned community is happy because you are not using the remainder
@@ -101,21 +109,25 @@ A *real* fix is to work with the natural distribution rather than try to
 circumvent it. Simply call `rand` until you get a number that fits
 within your selected range:
 
-    int r;
-    
-    do
-    {
-        r = rand();
-    } while (r >= HI);
+```c
+int r;
+
+do
+{
+    r = rand();
+} while (r >= HI);
+```
 
 Or for both lower and upper bounds:
 
-    int r;
-    
-    do
-    {
-        r = rand();
-    } while (r < LO || r >= HI);
+```c
+int r;
+
+do
+{
+    r = rand();
+} while (r < LO || r >= HI);
+```
 
 Not only does this fix the distribution problem, it also avoids the low
 order bit problem entirely. The down side to this solution is that the
@@ -153,7 +165,9 @@ the `time` function. In theory, this is a great idea because not only
 does it seed the random number generator with an ever changing value,
 but it is also portable:
 
-    srand((unsigned int)time(NULL));
+```c
+srand((unsigned int)time(NULL));
+```
 
 Right? Well no, not really. The issue is that `time_t` is a restricted
 type, and may not be meaningfully converted to `unsigned int`. That is
@@ -163,23 +177,27 @@ subtle lingering portability issues *should* leave a sour taste in the
 mouth. Fortunately, there is a way to use the result of `time` portably
 as a seed for `rand`; just hash the bytes of a **time\_t**:
 
-    unsigned time_seed()
+```c
+unsigned time_seed()
+{
+    time_t now = time(0);
+    unsigned char *p = (unsigned char *)&now;
+    unsigned seed = 0;
+
+    for (size_t i = 0; i < sizeof now; i++)
     {
-        time_t now = time(0);
-        unsigned char *p = (unsigned char *)&now;
-        unsigned seed = 0;
-    
-        for (size_t i = 0; i < sizeof now; i++)
-        {
-            seed = seed * (UCHAR_MAX + 2U) + p[i];
-        }
-    
-        return seed;
+        seed = seed * (UCHAR_MAX + 2U) + p[i];
     }
+
+    return seed;
+}
+```
     
     ...
     
-    srand (time_seed());
+```c    
+srand (time_seed());
+```
 
 A hash will take advantage of the way the system time changes. Even
 better, the C and C++ standards guarantee that type punning is a
@@ -230,20 +248,22 @@ you want using `operator()` of the distribution object. Since
 preference is to use it only for seeding the Mersenne Twister algorithm
 in cases where Mersenne Twister is the primary engine:
 
-    #include <iostream>
-    #include <random>
-    
-    int main()
+```c
+#include <iostream>
+#include <random>
+
+int main()
+{
+    std::random_device seed;
+    std::mt19937 gen(seed());
+    std::uniform_int_distribution<int> dist(0, 100);
+
+    for (int i = 0; i < 10; i++)
     {
-        std::random_device seed;
-        std::mt19937 gen(seed());
-        std::uniform_int_distribution<int> dist(0, 100);
-    
-        for (int i = 0; i < 10; i++)
-        {
-            std::cout << dist(gen) << '\n';
-        }
+        std::cout << dist(gen) << '\n';
     }
+}
+```
 
 Obviously, if you're writing code in C, this option is not available.
 But for C++ programmers with access to a C++11 compiler, you should

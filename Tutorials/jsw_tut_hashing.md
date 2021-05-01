@@ -26,7 +26,9 @@ is when you have an integer key. In that case it is a simple matter of
 forcing the integer into the range of the table, most commonly with the
 remainder operator:
 
-    unsigned index = key % N;
+```c
+unsigned index = key % N;
+```
 
 Unfortunately, this is insufficient most of the time for two reasons.
 First, keys are more likely to be strings than integers. There has to be
@@ -109,10 +111,12 @@ are known factors. For example, a perfect hash for a list of ten product
 numbers that are sure to differ in their 4th and 5th digits can be
 easily constructed:
 
-    unsigned hash(unsigned pid)
-    {
-        return pid / 1000 % 100;
-    }
+```c
+unsigned hash(unsigned pid)
+{
+    return pid / 1000 % 100;
+}
+```
 
 However, notice that even though there are only ten product numbers, a
 table of 100 buckets must be created because the resulting hash values
@@ -203,19 +207,21 @@ because books commonly suggest it in their rush to get past the topic of
 hash functions on their way to collision resolution methods. This
 algorithm is very bad:
 
-    unsigned add_hash(void *key, int len)
+```c
+unsigned add_hash(void *key, int len)
+{
+    unsigned char *p = key;
+    unsigned h = 0;
+    int i;
+
+    for (i = 0; i < len; i++)
     {
-        unsigned char *p = key;
-        unsigned h = 0;
-        int i;
-    
-        for (i = 0; i < len; i++)
-        {
-            h += p[i];
-        }
-    
-        return h;
+        h += p[i];
     }
+
+    return h;
+}
+```
 
 Generally, any hash algorithm that relies primarily on a commutitive
 operation will have an exceptionally bad distribution. This hash fails
@@ -236,19 +242,21 @@ Instead of adding together the bytes of an object as the additive hash
 does, the XOR hash repeatedly folds the bytes together to produce a
 seemingly random hash value:
 
-    unsigned xor_hash(void *key, int len)
+```c
+unsigned xor_hash(void *key, int len)
+{
+    unsigned char *p = key;
+    unsigned h = 0;
+    int i;
+
+    for (i = 0; i < len; i++)
     {
-        unsigned char *p = key;
-        unsigned h = 0;
-        int i;
-    
-        for (i = 0; i < len; i++)
-        {
-            h ^= p[i];
-        }
-    
-        return h;
+        h ^= p[i];
     }
+
+    return h;
+}
+```
 
 Unfortunately, this algorithm is too simple to work properly on most
 input data. The internal state, the variable **h**, is not mixed nearly
@@ -259,19 +267,21 @@ is still not very good.
 
 #### Rotating hash
 
-    unsigned rot_hash(void *key, int len)
+```c
+unsigned rot_hash(void *key, int len)
+{
+    unsigned char *p = key;
+    unsigned h = 0;
+    int i;
+
+    for (i = 0; i < len; i++)
     {
-        unsigned char *p = key;
-        unsigned h = 0;
-        int i;
-    
-        for (i = 0; i < len; i++)
-        {
-            h = (h << 4) ^ (h >> 28) ^ p[i];
-        }
-    
-        return h;
+        h = (h << 4) ^ (h >> 28) ^ p[i];
     }
+
+    return h;
+}
+```
 
 The rotating hash is identical to the XOR hash except instead of simply
 folding each byte of the input into the internal state, it also performs
@@ -292,19 +302,21 @@ comes to avalanche and permutation of the internal state. It has proven
 very good for small character keys, where it can outperform algorithms
 that result in a more random distribution:
 
-    unsigned djb_hash(void *key, int len)
+```c
+unsigned djb_hash(void *key, int len)
+{
+    unsigned char *p = key;
+    unsigned h = 0;
+    int i;
+
+    for (i = 0; i < len; i++)
     {
-        unsigned char *p = key;
-        unsigned h = 0;
-        int i;
-    
-        for (i = 0; i < len; i++)
-        {
-            h = 33 * h + p[i];
-        }
-    
-        return h;
+        h = 33 * h + p[i];
     }
+
+    return h;
+}
+```
 
 Bernstein's hash should be used with caution. It performs very well in
 practice, for no apparently known reasons (much like how the constant 33
@@ -320,19 +332,21 @@ combining step. This change does not appear to be well known or often
 used, the original algorithm is still recommended by nearly everyone,
 but the new algorithm typically results in a better distribution:
 
-    unsigned djb_hash(void *key, int len)
+```c
+unsigned djb_hash(void *key, int len)
+{
+    unsigned char *p = key;
+    unsigned h = 0;
+    int i;
+
+    for (i = 0; i < len; i++)
     {
-        unsigned char *p = key;
-        unsigned h = 0;
-        int i;
-    
-        for (i = 0; i < len; i++)
-        {
-            h = 33 * h ^ p[i];
-        }
-    
-        return h;
+        h = 33 * h ^ p[i];
     }
+
+    return h;
+}
+```
 
 #### Shift-Add-XOR hash
 
@@ -345,19 +359,21 @@ surprisingly powerful and flexible hash. Like many effective hashes, it
 will fail tests for avalanche, but that does not seem to affect its
 performance in practice.
 
-    unsigned sax_hash(void *key, int len)
+```
+unsigned sax_hash(void *key, int len)
+{
+    unsigned char *p = key;
+    unsigned h = 0;
+    int i;
+
+    for (i = 0; i < len; i++)
     {
-        unsigned char *p = key;
-        unsigned h = 0;
-        int i;
-    
-        for (i = 0; i < len; i++)
-        {
-            h ^= (h << 5) + (h >> 2) + p[i];
-        }
-    
-        return h;
+        h ^= (h << 5) + (h >> 2) + p[i];
     }
+
+    return h;
+}
+```
 
 #### FNV hash
 
@@ -370,19 +386,21 @@ in an application. It is also recommended that the [FNV
 website](http://www.isthe.com/chongo/tech/comp/fnv/) be visited for
 useful descriptions of how to modify the algorithm for various uses.
 
-    unsigned fnv_hash(void *key, int len)
+```c
+unsigned fnv_hash(void *key, int len)
+{
+    unsigned char *p = key;
+    unsigned h = 2166136261;
+    int i;
+
+    for (i = 0; i < len; i++)
     {
-        unsigned char *p = key;
-        unsigned h = 2166136261;
-        int i;
-    
-        for (i = 0; i < len; i++)
-        {
-            h = (h * 16777619) ^ p[i];
-        }
-    
-        return h;
+        h = (h * 16777619) ^ p[i];
     }
+
+    return h;
+}
+```
 
 #### One-at-a-Time hash
 
@@ -391,25 +409,27 @@ table lookup. In fact, one of his hashes is considered state of the art
 for lookup, which we will see shortly. A considerably simpler algorithm
 of his design is the One-at-a-Time hash:
 
-    unsigned oat_hash(void *key, int len)
+```c
+unsigned oat_hash(void *key, int len)
+{
+    unsigned char *p = key;
+    unsigned h = 0;
+    int i;
+
+    for (i = 0; i < len; i++)
     {
-        unsigned char *p = key;
-        unsigned h = 0;
-        int i;
-    
-        for (i = 0; i < len; i++)
-        {
-            h += p[i];
-            h += (h << 10);
-            h ^= (h >> 6);
-        }
-    
-        h += (h << 3);
-        h ^= (h >> 11);
-        h += (h << 15);
-    
-        return h;
+        h += p[i];
+        h += (h << 10);
+        h ^= (h >> 6);
     }
+
+    h += (h << 3);
+    h ^= (h >> 11);
+    h += (h << 15);
+
+    return h;
+}
+```
 
 This algorithm quickly reaches avalanche and performs very well. This
 function is another that should be one of the first to be tested in any
@@ -430,19 +450,21 @@ are uniform. The size of the table should match the values in a byte.
 For example, if a byte is eight bits then the table would hold 256
 random numbers:
 
-    unsigned jsw_hash(void *key, int len)
+```c
+unsigned jsw_hash(void *key, int len)
+{
+    unsigned char *p = key;
+    unsigned h = 16777551;
+    int i;
+
+    for (i = 0; i < len; i++)
     {
-        unsigned char *p = key;
-        unsigned h = 16777551;
-        int i;
-    
-        for (i = 0; i < len; i++)
-        {
-            h = (h << 1 | h >> 31) ^ tab[p[i]];
-        }
-    
-        return h;
+        h = (h << 1 | h >> 31) ^ tab[p[i]];
     }
+
+    return h;
+}
+```
 
 In general, this algorithm is among the better ones that I have tested
 in terms of both distribution and performance. I may be slightly biased,
@@ -458,27 +480,29 @@ the other algorithms presented in this tutorial to justify its slightly
 more complicated implementation. It should be on your list of first
 functions to test in a new lookup implementation:
 
-    unsigned elf_hash(void *key, int len)
+```c
+unsigned elf_hash(void *key, int len)
+{
+    unsigned char *p = key;
+    unsigned h = 0, g;
+    int i;
+
+    for (i = 0; i < len; i++)
     {
-        unsigned char *p = key;
-        unsigned h = 0, g;
-        int i;
-    
-        for (i = 0; i < len; i++)
+        h = (h << 4) + p[i];
+        g = h & 0xf0000000L;
+
+        if (g != 0)
         {
-            h = (h << 4) + p[i];
-            g = h & 0xf0000000L;
-    
-            if (g != 0)
-            {
-                h ^= g >> 24;
-            }
-    
-            h &= ~g;
+            h ^= g >> 24;
         }
-    
-        return h;
+
+        h &= ~g;
     }
+
+    return h;
+}
+```
 
 #### Jenkins hash
 
@@ -488,64 +512,66 @@ one of the best and most thoroughly analyzed algorithms on the market
 presently. Unfortunately, it is also ridiculously complicated compared
 to the other hashes examined in this tutorial:
 
-    #define hashsize(n) (1U << (n))
-    #define hashmask(n) (hashsize(n) - 1)
-    
-    #define mix(a,b,c) \
-    { \
-        a -= b; a -= c; a ^= (c >> 13); \
-        b -= c; b -= a; b ^= (a << 8); \
-        c -= a; c -= b; c ^= (b >> 13); \
-        a -= b; a -= c; a ^= (c >> 12); \
-        b -= c; b -= a; b ^= (a << 16); \
-        c -= a; c -= b; c ^= (b >> 5); \
-        a -= b; a -= c; a ^= (c >> 3); \
-        b -= c; b -= a; b ^= (a << 10); \
-        c -= a; c -= b; c ^= (b >> 15); \
-    }
-    
-    unsigned jen_hash(unsigned char *k, unsigned length, unsigned initval)
+```c
+#define hashsize(n) (1U << (n))
+#define hashmask(n) (hashsize(n) - 1)
+
+#define mix(a,b,c) \
+{ \
+    a -= b; a -= c; a ^= (c >> 13); \
+    b -= c; b -= a; b ^= (a << 8); \
+    c -= a; c -= b; c ^= (b >> 13); \
+    a -= b; a -= c; a ^= (c >> 12); \
+    b -= c; b -= a; b ^= (a << 16); \
+    c -= a; c -= b; c ^= (b >> 5); \
+    a -= b; a -= c; a ^= (c >> 3); \
+    b -= c; b -= a; b ^= (a << 10); \
+    c -= a; c -= b; c ^= (b >> 15); \
+}
+
+unsigned jen_hash(unsigned char *k, unsigned length, unsigned initval)
+{
+    unsigned a, b;
+    unsigned c = initval;
+    unsigned len = length;
+
+    a = b = 0x9e3779b9;
+
+    while (len >= 12)
     {
-        unsigned a, b;
-        unsigned c = initval;
-        unsigned len = length;
-    
-        a = b = 0x9e3779b9;
-    
-        while (len >= 12)
-        {
-            a += (k[0] + ((unsigned)k[1] << 8) + ((unsigned)k[2] << 16) + ((unsigned)k[3] << 24));
-            b += (k[4] + ((unsigned)k[5] << 8) + ((unsigned)k[6] << 16) + ((unsigned)k[7] << 24));
-            c += (k[8] + ((unsigned)k[9] << 8) + ((unsigned)k[10] << 16) + ((unsigned)k[11] << 24));
-    
-            mix(a, b, c);
-    
-            k += 12;
-            len -= 12;
-        }
-    
-        c += length;
-    
-        switch (len)
-        {
-        case 11: c += ((unsigned)k[10] << 24);
-        case 10: c += ((unsigned)k[9] << 16);
-        case 9: c += ((unsigned)k[8] << 8);
-            /* First byte of c reserved for length */
-        case 8: b += ((unsigned)k[7] << 24);
-        case 7: b += ((unsigned)k[6] << 16);
-        case 6: b += ((unsigned)k[5] << 8);
-        case 5: b += k[4];
-        case 4: a += ((unsigned)k[3] << 24);
-        case 3: a += ((unsigned)k[2] << 16);
-        case 2: a += ((unsigned)k[1] << 8);
-        case 1: a += k[0];
-        }
-    
+        a += (k[0] + ((unsigned)k[1] << 8) + ((unsigned)k[2] << 16) + ((unsigned)k[3] << 24));
+        b += (k[4] + ((unsigned)k[5] << 8) + ((unsigned)k[6] << 16) + ((unsigned)k[7] << 24));
+        c += (k[8] + ((unsigned)k[9] << 8) + ((unsigned)k[10] << 16) + ((unsigned)k[11] << 24));
+
         mix(a, b, c);
-    
-        return c;
+
+        k += 12;
+        len -= 12;
     }
+
+    c += length;
+
+    switch (len)
+    {
+    case 11: c += ((unsigned)k[10] << 24);
+    case 10: c += ((unsigned)k[9] << 16);
+    case 9: c += ((unsigned)k[8] << 8);
+        /* First byte of c reserved for length */
+    case 8: b += ((unsigned)k[7] << 24);
+    case 7: b += ((unsigned)k[6] << 16);
+    case 6: b += ((unsigned)k[5] << 8);
+    case 5: b += k[4];
+    case 4: a += ((unsigned)k[3] << 24);
+    case 3: a += ((unsigned)k[2] << 16);
+    case 2: a += ((unsigned)k[1] << 8);
+    case 1: a += k[0];
+    }
+
+    mix(a, b, c);
+
+    return c;
+}
+```
 
 For details on how this algorithm works, feel free to visit Bob Jenkins'
 [website](http://burtleburtle.net/bob/).
@@ -591,18 +617,20 @@ collisions can be performed without the use of a hash table by simply
 taking a sample input with no duplicates and counting collisions with an
 existence table:
 
-    function collisions: file, n
-    begin
-        table[n] = {0}
-    
-        while get ( file, buffer ) do
-            table[hash ( buffer ) % n] +:= 1
-        loop
-    
-        for i := 0 to n do
-            println table[i]
-        loop
-    end
+```vb
+function collisions: file, n
+begin
+    table[n] = {0}
+
+    while get ( file, buffer ) do
+        table[hash ( buffer ) % n] +:= 1
+    loop
+
+    for i := 0 to n do
+        println table[i]
+    loop
+end
+```
 
 Another alternative is to plug the hash function into my
 [jsw\_hlib](../jsw_hlib) library and run it with a few files of sample

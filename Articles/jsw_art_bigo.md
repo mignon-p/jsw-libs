@@ -56,19 +56,21 @@ on the algorithm. A common notation that removes constants is called Big
 O Notation, where the O means “order of” (there are variants that do
 something similar that we'll look at shortly). Let's look at an example:
 
-    void f (int a[], int n)
+```c
+void f (int a[], int n)
+{
+    int i;
+
+    printf("N = %d\n", n);
+
+    for (i = 0; i < n; i++)
     {
-        int i;
-    
-        printf("N = %d\n", n);
-    
-        for (i = 0; i < n; i++)
-        {
-            printf("%d ", a[i]);
-        }
-    
-        printf("\n");
+        printf("%d ", a[i]);
     }
+
+    printf("\n");
+}
+```
 
 In this function, the only part that takes longer as the size of the
 array grows is the loop. Therefore, the two printf calls outside of the
@@ -100,20 +102,22 @@ accurate measure. For example, let's say we have a sequential search of
 an unordered array where the items are randomly distributed and we want
 both the average case growth and the worst case growth:
 
-    int find(int a[], int n, int x)
+```c
+int find(int a[], int n, int x)
+{
+    int i;
+
+    for (i = 0; i < n; i++)
     {
-        int i;
-    
-        for (i = 0; i < n; i++)
+        if (a[i] == x)
         {
-            if (a[i] == x)
-            {
-                return 1;
-            }
+            return 1;
         }
-    
-        return 0;
     }
+
+    return 0;
+}
+```
 
 This algorithm is clearly O(N) because it only has one loop that relies
 on the size of the array, and the time complexity of the loop doubles as
@@ -129,30 +133,32 @@ array in half at each comparison and only searching the half where the
 item might be. That's common knowledge, but why is it faster? Here's the
 code for a binary search:
 
-    int find(int a[], int n, int x)
+```c
+int find(int a[], int n, int x)
+{
+    int i = 0;
+
+    while (i < n)
     {
-        int i = 0;
-    
-        while (i < n)
+        int mid = (n + i) / 2;
+
+        if (a[mid] < x)
         {
-            int mid = (n + i) / 2;
-    
-            if (a[mid] < x)
-            {
-                n = mid;
-            }
-            else if (a[mid] > x)
-            {
-                i = mid + 1;
-            }
-            else
-            {
-                return 1;
-            }
+            n = mid;
         }
-    
-        return 0;
+        else if (a[mid] > x)
+        {
+            i = mid + 1;
+        }
+        else
+        {
+            return 1;
+        }
     }
+
+    return 0;
+}
+```
 
 We can call this an O(N) algorithm and not be wrong because the time
 complexity will never exceed O(N). But because the array is split in
@@ -197,26 +203,28 @@ of the array. When you move an item to the back, decrease the size of
 the array so that you don't continually choose from the items that have
 already been selected:
 
-    void jsw_selection(int a[], int n)
+```c
+void jsw_selection(int a[], int n)
+{
+    while (--n > 0)
     {
-        while (--n > 0)
+        int i, max = n;
+
+        for (i = 0; i < n; i++)
         {
-            int i, max = n;
-    
-            for (i = 0; i < n; i++)
+            if (a[i] > a[max])
             {
-                if (a[i] > a[max])
-                {
-                    max = i;
-                }
+                max = i;
             }
-    
-            if (max != n)
-            {
-                jsw_swap (&a;[n], &a;[max]);
-            }
-      }
-    }
+        }
+
+        if (max != n)
+        {
+            jsw_swap (&a;[n], &a;[max]);
+        }
+  }
+}
+```
 
 This algorithm has two loops, one inside of the other. Both rely on the
 size of the array, so the algorithm is clearly O(N \* N), more commonly
@@ -233,46 +241,48 @@ is O(N), selection sort is O(N<sup>2</sup>). But by using a heap where
 selection is O(1) and fixing the heap is Θ(log<sub>2</sub> N), we can
 turn the whole process of selection into a Θ(log<sub>2</sub> N) process:
 
-    void jsw_do_heap(int a[], int i, int n)
+```c
+void jsw_do_heap(int a[], int i, int n)
+{
+    int k = i * 2 + 1;
+    int save = a[i];
+
+    while (k < n)
     {
-        int k = i * 2 + 1;
-        int save = a[i];
-    
-        while (k < n)
+        if (k + 1 < n && a[k] < a[k + 1])
         {
-            if (k + 1 < n && a[k] < a[k + 1])
-            {
-                ++k;
-            }
-    
-            if (save >= a[k])
-            {
-                break;
-            }
-    
-            a[i] = a[k];
-            i = k;
-            k = i * 2 + 1;
+            ++k;
         }
-    
-        a[i] = save;
+
+        if (save >= a[k])
+        {
+            break;
+        }
+
+        a[i] = a[k];
+        i = k;
+        k = i * 2 + 1;
     }
-    
-    void jsw_heapsort(int a[], int n)
+
+    a[i] = save;
+}
+
+void jsw_heapsort(int a[], int n)
+{
+    int i = n / 2;
+
+    while (i-- > 0)
     {
-        int i = n / 2;
-    
-        while (i-- > 0)
-        {
-            jsw_do_heap(a, i, n);
-        }
-    
-        while (--n > 0)
-        {
-            jsw_swap(&a;[0], &a;[n]);
-            jsw_do_heap(a, 0, n);
-        }
+        jsw_do_heap(a, i, n);
     }
+
+    while (--n > 0)
+    {
+        jsw_swap(&a;[0], &a;[n]);
+        jsw_do_heap(a, 0, n);
+    }
+}
+```
 
 Because the heap is structured like a tree, **jsw\_do\_heap** is
 Θ(log<sub>2</sub> N). The first loop in **jsw\_heapsort** is O(N / 2),

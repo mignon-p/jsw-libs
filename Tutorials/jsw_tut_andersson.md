@@ -222,40 +222,42 @@ split. This implies that skew and split need to be implemented
 recursively, which is both doable and trivial if you know how to perform
 a rotation:
 
-    struct jsw_node *skew(struct jsw_node *root)
+```c
+struct jsw_node *skew(struct jsw_node *root)
+{
+    if (root->level != 0)
     {
-        if (root->level != 0)
-        {
-            if (root->link[0]->level == root->level)
-            {
-                struct jsw_node *save = root;
-    
-                root = root->link[0];
-                save->link[0] = root->link[1];
-                root->link[1] = save;
-            }
-    
-            root->link[1] = skew(root->link[1]);
-        }
-    
-        return root;
-    }
-    
-    struct jsw_node *split(struct jsw_node *root)
-    {
-        if (root->link[1]->link[1]->level == root->level && root->level != 0)
+        if (root->link[0]->level == root->level)
         {
             struct jsw_node *save = root;
-    
-            root = root->link[1];
-            save->link[1] = root->link[0];
-            root->link[0] = save;
-            ++root->level;
-            root->link[1] = split(root->link[1]);
+
+            root = root->link[0];
+            save->link[0] = root->link[1];
+            root->link[1] = save;
         }
-    
-        return root;
+
+        root->link[1] = skew(root->link[1]);
     }
+
+    return root;
+}
+
+struct jsw_node *split(struct jsw_node *root)
+{
+    if (root->link[1]->link[1]->level == root->level && root->level != 0)
+    {
+        struct jsw_node *save = root;
+
+        root = root->link[1];
+        save->link[1] = root->link[0];
+        root->link[0] = save;
+        ++root->level;
+        root->link[1] = split(root->link[1]);
+    }
+
+    return root;
+}
+```
 
 It might seem at first glance that a recursive skew and split all the
 way down the tree would be inefficient, but notice that both skew and
@@ -278,34 +280,36 @@ call is made at a time rather than stacking them up with recursion. The
 implementation is identical to the recursive implementation except
 without the recursive calls:
 
-    struct jsw_node *skew(struct jsw_node *root)
+```c
+struct jsw_node *skew(struct jsw_node *root)
+{
+    if (root->link[0]->level == root->level && root->level != 0)
     {
-        if (root->link[0]->level == root->level && root->level != 0)
-        {
-            struct jsw_node *save = root->link[0];
-    
-            root->link[0] = save->link[1];
-            save->link[1] = root;
-            root = save;
-        }
-    
-        return root;
+        struct jsw_node *save = root->link[0];
+
+        root->link[0] = save->link[1];
+        save->link[1] = root;
+        root = save;
     }
-    
-    struct jsw_node *split(struct jsw_node *root)
+
+    return root;
+}
+
+struct jsw_node *split(struct jsw_node *root)
+{
+    if (root->link[1]->link[1]->level == root->level && root->level != 0)
     {
-        if (root->link[1]->link[1]->level == root->level && root->level != 0)
-        {
-            struct jsw_node *save = root->link[1];
-    
-            root->link[1] = save->link[0];
-            save->link[0] = root;
-            root = save;
-            ++root->level;
-        }
-    
-        return root;
+        struct jsw_node *save = root->link[1];
+
+        root->link[1] = save->link[0];
+        save->link[0] = root;
+        root = save;
+        ++root->level;
     }
+
+    return root;
+}
+```
 
 A third alternative is to write skew and split inline and avoid function
 calls altogether. My Andersson tree library uses this approach by
@@ -314,24 +318,26 @@ implementation optimization, and the rest of this tutorial will
 conveniently ignore the inline approach in favor of easier to understand
 solutions.
 
-    #define skew(t) do {                                         \
-      if ( t->link[0]->level == t->level && root->level != 0 ) { \
-        struct jsw_node *save = t->link[0];                      \
-        t->link[0] = save->link[1];                              \
-        save->link[1] = t;                                       \
-        t = save;                                                \
-      }                                                          \
-    } while(0)
-    
-    #define split(t) do {                                                 \
-      if ( t->link[1]->link[1]->level == t->level && root->level != 0 ) { \
-        struct jsw_node *save = t->link[1];                               \
-        t->link[1] = save->link[0];                                       \
-        save->link[0] = t;                                                \
-        t = save;                                                         \
-        ++t->level;                                                       \
-      }                                                                   \
-    } while(0)
+```c
+#define skew(t) do {                                         \
+  if ( t->link[0]->level == t->level && root->level != 0 ) { \
+    struct jsw_node *save = t->link[0];                      \
+    t->link[0] = save->link[1];                              \
+    save->link[1] = t;                                       \
+    t = save;                                                \
+  }                                                          \
+} while(0)
+
+#define split(t) do {                                                 \
+  if ( t->link[1]->link[1]->level == t->level && root->level != 0 ) { \
+    struct jsw_node *save = t->link[1];                               \
+    t->link[1] = save->link[0];                                       \
+    save->link[0] = t;                                                \
+    t = save;                                                         \
+    ++t->level;                                                       \
+  }                                                                   \
+} while(0)
+```
 
 #### Insertion
 
@@ -344,29 +350,31 @@ sentinel in every implementation for this tutorial. The sentinel will
 simply be a global pointer to a node called nil, and must be fully
 initialized before any other node in the tree:
 
-    struct jsw_node
+```c
+struct jsw_node
+{
+    int data;
+    int level;
+    struct jsw_node *link[2];
+};
+
+struct jsw_node *nil;
+
+int jsw_init(void)
+{
+    nil = malloc(sizeof *nil);
+
+    if (nil == NULL)
     {
-        int data;
-        int level;
-        struct jsw_node *link[2];
-    };
-    
-    struct jsw_node *nil;
-    
-    int jsw_init(void)
-    {
-        nil = malloc(sizeof *nil);
-    
-        if (nil == NULL)
-        {
-            return 0;
-        }
-    
-        nil->level = 0;
-        nil->link[0] = nil->link[1] = nil;
-    
-        return 1;
+        return 0;
     }
+
+    nil->level = 0;
+    nil->link[0] = nil->link[1] = nil;
+
+    return 1;
+}
+```
 
 Since leaf nodes have a level of 1, nil will have a level of 0 so that
 it does not adversely affect how restructuring algorithms work. The
@@ -379,21 +387,23 @@ Technically this isn't needed since that code can be written inline, but
 it makes the algorithms shorter and seemingly simpler by factoring out
 unnecessary clutter:
 
-    struct jsw_node *make_node(int data, int level)
+```c
+struct jsw_node *make_node(int data, int level)
+{
+    struct jsw_node *rn = malloc(sizeof *rn);
+
+    if (rn == NULL)
     {
-        struct jsw_node *rn = malloc(sizeof *rn);
-    
-        if (rn == NULL)
-        {
-            return NULL;
-        }
-    
-        rn->data = data;
-        rn->level = level;
-        rn->link[0] = rn->link[1] = nil;
-    
-        return rn;
+        return NULL;
     }
+
+    rn->data = data;
+    rn->level = level;
+    rn->link[0] = rn->link[1] = nil;
+
+    return rn;
+}
+```
 
 With these preliminaries out of the way, we can look at the recursive
 insertion algorithm described by Andersson and Weiss. The bad news is
@@ -405,23 +415,25 @@ and smart looking code for a balanced tree. It's good news because this
 is about as simple as it gets for a balanced tree, and looking smart
 gets old after you have to implement and debug it a few times:
 
-    struct jsw_node *jsw_insert(struct jsw_node *root, int data)
+```c
+struct jsw_node *jsw_insert(struct jsw_node *root, int data)
+{
+    if (root == nil)
     {
-        if (root == nil)
-        {
-            root = make_node(data, 1);
-        }
-        else
-        {
-            int dir = root->data < data;
-    
-            root->link[dir] = jsw_insert(root->link[dir], data);
-            root = skew(root);
-            root = split(root);
-        }
-    
-        return root;
+        root = make_node(data, 1);
     }
+    else
+    {
+        int dir = root->data < data;
+
+        root->link[dir] = jsw_insert(root->link[dir], data);
+        root = skew(root);
+        root = split(root);
+    }
+
+    return root;
+}
+```
 
 A new node is always placed at the bottom of the tree, so it will always
 be given a level of 1. Remember that nil has a level of 0, so skew and
@@ -564,56 +576,58 @@ news is that an Andersson tree is really no harder to implement
 iteratively than a basic binary search tree. Here is the code for
 non-recursive insertion into an Andersson tree:
 
-    struct jsw_node *jsw_insert(struct jsw_node *root, int data)
+```c
+struct jsw_node *jsw_insert(struct jsw_node *root, int data)
+{
+    if (root == nil)
     {
-        if (root == nil)
-        {
-            root = make_node(data, 1);
-        }
-        else
-        {
-            struct jsw_node *it = root;
-            struct jsw_node *up[32];
-            int top = 0, dir = 0;
-    
-            for (;;)
-            {
-                up[top++] = it;
-                dir = it->data < data;
-    
-                if (it->link[dir] == nil)
-                {
-                    break;
-                }
-    
-                it = it->link[dir];
-            }
-    
-            it->link[dir] = make_node(data, 1);
-    
-            while (--top >= 0)
-            {
-                if (top != 0)
-                {
-                    dir = up[top - 1]->link[1] == up[top];
-                }
-    
-                up[top] = skew(up[top]);
-                up[top] = split(up[top]);
-    
-                if (top != 0)
-                {
-                    up[top - 1]->link[dir] = up[top];
-                }
-                else
-                {
-                    root = up[top];
-                }
-            }
-        }
-    
-        return root;
+        root = make_node(data, 1);
     }
+    else
+    {
+        struct jsw_node *it = root;
+        struct jsw_node *up[32];
+        int top = 0, dir = 0;
+
+        for (;;)
+        {
+            up[top++] = it;
+            dir = it->data < data;
+
+            if (it->link[dir] == nil)
+            {
+                break;
+            }
+
+            it = it->link[dir];
+        }
+
+        it->link[dir] = make_node(data, 1);
+
+        while (--top >= 0)
+        {
+            if (top != 0)
+            {
+                dir = up[top - 1]->link[1] == up[top];
+            }
+
+            up[top] = skew(up[top]);
+            up[top] = split(up[top]);
+
+            if (top != 0)
+            {
+                up[top - 1]->link[dir] = up[top];
+            }
+            else
+            {
+                root = up[top];
+            }
+        }
+    }
+
+    return root;
+}
+```
 
 This implementation simulates the down and up movement of recursion by
 saving the path down the tree on a stack and then popping nodes off of
@@ -636,50 +650,52 @@ then if its child has a lower level, that level must be 3. Then a
 recursive skew and split is performed. Let's look at my recursive code
 for deletion, and then step through an example:
 
-    struct jsw_node *jsw_remove(struct jsw_node *root, int data)
+```c
+struct jsw_node *jsw_remove(struct jsw_node *root, int data)
+{
+    if (root != nil)
     {
-        if (root != nil)
+        if (data == root->data)
         {
-            if (data == root->data)
+            if (root->link[0] != nil && root->link[1] != nil)
             {
-                if (root->link[0] != nil && root->link[1] != nil)
+                struct jsw_node *heir = root->link[0];
+
+                while (heir->link[1] != nil)
                 {
-                    struct jsw_node *heir = root->link[0];
-    
-                    while (heir->link[1] != nil)
-                    {
-                        heir = heir->link[1];
-                    }
-    
-                    root->data = heir->data;
-                    root->link[0] = jsw_remove(root->link[0], root->data);
+                    heir = heir->link[1];
                 }
-                else
-                {
-                    root = root->link[root->link[0] == nil];
-                }
+
+                root->data = heir->data;
+                root->link[0] = jsw_remove(root->link[0], root->data);
             }
             else
             {
-                int dir = root->data < data;
-    
-                root->link[dir] = jsw_remove(root->link[dir], data);
+                root = root->link[root->link[0] == nil];
             }
         }
-    
-        if (root->link[0]->level < root->level - 1 || root->link[1]->level < root->level - 1)
+        else
         {
-            if (root->link[1]->level > --root->level)
-            {
-                root->link[1]->level = root->level;
-            }
-    
-            root = skew(root);
-            root = split(root);
+            int dir = root->data < data;
+
+            root->link[dir] = jsw_remove(root->link[dir], data);
         }
-    
-        return root;
     }
+
+    if (root->link[0]->level < root->level - 1 || root->link[1]->level < root->level - 1)
+    {
+        if (root->link[1]->level > --root->level)
+        {
+            root->link[1]->level = root->level;
+        }
+
+        root = skew(root);
+        root = split(root);
+    }
+
+    return root;
+}
+```
 
 This is identical to recursive deletion from a basic binary search tree
 with the extra test for a break in the levels. If there's no break then
@@ -799,53 +815,55 @@ With all of this in mind, the non-recursive versions of skew and split
 can be used as long as three calls to skew and two calls to split are
 made:
 
-    struct jsw_node *jsw_remove(struct jsw_node *root, int data)
+```c
+struct jsw_node *jsw_remove(struct jsw_node *root, int data)
+{
+    if (root != nil)
     {
-        if (root != nil)
+        if (data == root->data)
         {
-            if (data == root->data)
+            if (root->link[0] != nil && root->link[1] != nil)
             {
-                if (root->link[0] != nil && root->link[1] != nil)
+                struct jsw_node *heir = root->link[0];
+
+                while (heir->link[1] != nil)
                 {
-                    struct jsw_node *heir = root->link[0];
-    
-                    while (heir->link[1] != nil)
-                    {
-                        heir = heir->link[1];
-                    }
-    
-                    root->data = heir->data;
-                    root->link[0] = jsw_remove(root->link[0], root->data);
+                    heir = heir->link[1];
                 }
-                else
-                {
-                    root = root->link[root->link[0] == nil];
-                }
+
+                root->data = heir->data;
+                root->link[0] = jsw_remove(root->link[0], root->data);
             }
             else
             {
-                int dir = root->data < data;
-    
-                root->link[dir] = jsw_remove(root->link[dir], data);
+                root = root->link[root->link[0] == nil];
             }
         }
-    
-        if (root->link[0]->level < root->level - 1 || root->link[1]->level < root->level - 1)
+        else
         {
-            if (root->link[1]->level > --root->level)
-            {
-                root->link[1]->level = root->level;
-            }
-    
-            root = skew(root);
-            root->link[1] = skew(root->link[1]);
-            root->link[1]->link[1] = skew(root->link[1]->link[1]);
-            root = split(root);
-            root->link[1] = split(root->link[1]);
+            int dir = root->data < data;
+
+            root->link[dir] = jsw_remove(root->link[dir], data);
         }
-    
-        return root;
     }
+
+    if (root->link[0]->level < root->level - 1 || root->link[1]->level < root->level - 1)
+    {
+        if (root->link[1]->level > --root->level)
+        {
+            root->link[1]->level = root->level;
+        }
+
+        root = skew(root);
+        root->link[1] = skew(root->link[1]);
+        root->link[1]->link[1] = skew(root->link[1]->link[1]);
+        root = split(root);
+        root->link[1] = split(root->link[1]);
+    }
+
+    return root;
+}
+```
 
 All of this is fun, and in my opinion this recursive version is easy to
 understand, but both Andersson and Weiss described a more efficient
@@ -855,55 +873,57 @@ comparison. The trick is to use two variables that point to the heir
 whose value will replace the deleted item, and the item to be replaced.
 The code is simple, but unconventional enough to be confusing:
 
-    struct jsw_node *jsw_remove(struct jsw_node *root, int data)
+```c
+struct jsw_node *jsw_remove(struct jsw_node *root, int data)
+{
+    static struct jsw_node *item, *heir;
+
+    /* Search down the tree */
+    if (root != nil)
     {
-        static struct jsw_node *item, *heir;
-    
-        /* Search down the tree */
-        if (root != nil)
+        int dir = root->data < data;
+
+        heir = root;
+
+        if (dir == 0)
         {
-            int dir = root->data < data;
-    
-            heir = root;
-    
-            if (dir == 0)
-            {
-                item = root;
-            }
-    
-            root->link[dir] = jsw_remove(root->link[dir], data);
+            item = root;
         }
-    
-        if (root == heir)
-        {
-            /* At the bottom, remove */
-            if (item != nil && item->data == data)
-            {
-                item->data = heir->data;
-                item = nil;
-                root = root->link[1];
-            }
-        }
-        else
-        {
-            /* Not at the bottom, rebalance */
-            if (root->link[0]->level < root->level - 1 || root->link[1]->level < root->level - 1)
-            {
-                if (root->link[1]->level > --root->level)
-                {
-                    root->link[1]->level = root->level;
-                }
-    
-                root = skew(root);
-                root->link[1] = skew(root->link[1]);
-                root->link[1]->link[1] = skew(root->link[1]->link[1]);
-                root = split(root);
-                root->link[1] = split(root->link[1]);
-            }
-        }
-    
-        return root;
+
+        root->link[dir] = jsw_remove(root->link[dir], data);
     }
+
+    if (root == heir)
+    {
+        /* At the bottom, remove */
+        if (item != nil && item->data == data)
+        {
+            item->data = heir->data;
+            item = nil;
+            root = root->link[1];
+        }
+    }
+    else
+    {
+        /* Not at the bottom, rebalance */
+        if (root->link[0]->level < root->level - 1 || root->link[1]->level < root->level - 1)
+        {
+            if (root->link[1]->level > --root->level)
+            {
+                root->link[1]->level = root->level;
+            }
+
+            root = skew(root);
+            root->link[1] = skew(root->link[1]);
+            root->link[1]->link[1] = skew(root->link[1]->link[1]);
+            root = split(root);
+            root->link[1] = split(root->link[1]);
+        }
+    }
+
+    return root;
+}
+```
 
 When we think of efficiency, recursion typically doesn't come to mind.
 Of course, in a practical implementation it really depends on what is
@@ -913,93 +933,95 @@ non-recursive version of deletion. Amazingly enough, it corresponds to
 deletion in a basic binary search tree, with only a small amount of
 balancing and bookkeeping code added:
 
-    struct jsw_node *jsw_remove(struct jsw_node *root, int data)
+```c
+struct jsw_node *jsw_remove(struct jsw_node *root, int data)
+{
+    if (root != nil)
     {
-        if (root != nil)
+        struct jsw_node *it = root;
+        struct jsw_node *up[32];
+        int top = 0, dir = 0;
+
+        for (;;)
         {
-            struct jsw_node *it = root;
-            struct jsw_node *up[32];
-            int top = 0, dir = 0;
-    
-            for (;;)
+            up[top++] = it;
+
+            if (it == nil)
             {
-                up[top++] = it;
-    
-                if (it == nil)
-                {
-                    return root;
-                }
-                else if (data == it->data)
-                {
-                    break;
-                }
-    
-                dir = it->data < data;
-                it = it->link[dir];
+                return root;
             }
-    
-            if (it->link[0] == nil || it->link[1] == nil)
+            else if (data == it->data)
             {
-                int dir2 = it->link[0] == nil;
-    
-                if (--top != 0)
-                {
-                    up[top - 1]->link[dir] = it->link[dir2];
-                }
-                else
-                {
-                    root = it->link[1];
-                }
+                break;
+            }
+
+            dir = it->data < data;
+            it = it->link[dir];
+        }
+
+        if (it->link[0] == nil || it->link[1] == nil)
+        {
+            int dir2 = it->link[0] == nil;
+
+            if (--top != 0)
+            {
+                up[top - 1]->link[dir] = it->link[dir2];
             }
             else
             {
-                struct jsw_node *heir = it->link[1];
-                struct jsw_node *prev = it;
-    
-                while (heir->link[0] != nil)
-                {
-                    up[top++] = prev = heir;
-                    heir = heir->link[0];
-                }
-    
-                it->data = heir->data;
-                prev->link[prev == it] = heir->link[1];
-            }
-    
-            while (--top >= 0)
-            {
-                if (top != 0)
-                {
-                    dir = up[top - 1]->link[1] == up[top];
-                }
-    
-                if (up[top]->link[0]->level < up[top]->level - 1 || up[top]->link[1]->level < up[top]->level - 1)
-                {
-                    if (up[top]->link[1]->level > --up[top]->level)
-                    {
-                        up[top]->link[1]->level = up[top]->level;
-                    }
-    
-                    up[top] = skew(up[top]);
-                    up[top]->link[1] = skew(up[top]->link[1]);
-                    up[top]->link[1]->link[1] = skew(up[top]->link[1]->link[1]);
-                    up[top] = split(up[top]);
-                    up[top]->link[1] = split(up[top]->link[1]);
-                }
-    
-                if (top != 0)
-                {
-                    up[top - 1]->link[dir] = up[top];
-                }
-                else
-                {
-                    root = up[top];
-                }
+                root = it->link[1];
             }
         }
-    
-        return root;
+        else
+        {
+            struct jsw_node *heir = it->link[1];
+            struct jsw_node *prev = it;
+
+            while (heir->link[0] != nil)
+            {
+                up[top++] = prev = heir;
+                heir = heir->link[0];
+            }
+
+            it->data = heir->data;
+            prev->link[prev == it] = heir->link[1];
+        }
+
+        while (--top >= 0)
+        {
+            if (top != 0)
+            {
+                dir = up[top - 1]->link[1] == up[top];
+            }
+
+            if (up[top]->link[0]->level < up[top]->level - 1 || up[top]->link[1]->level < up[top]->level - 1)
+            {
+                if (up[top]->link[1]->level > --up[top]->level)
+                {
+                    up[top]->link[1]->level = up[top]->level;
+                }
+
+                up[top] = skew(up[top]);
+                up[top]->link[1] = skew(up[top]->link[1]);
+                up[top]->link[1]->link[1] = skew(up[top]->link[1]->link[1]);
+                up[top] = split(up[top]);
+                up[top]->link[1] = split(up[top]->link[1]);
+            }
+
+            if (top != 0)
+            {
+                up[top - 1]->link[dir] = up[top];
+            }
+            else
+            {
+                root = up[top];
+            }
+        }
     }
+
+    return root;
+}
+```
 
 #### Conclusion
 
