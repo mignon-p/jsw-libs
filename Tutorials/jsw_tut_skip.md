@@ -1,6 +1,6 @@
 # Skip Lists
 
-  
+
 
 A binary search tree is a data structure designed for efficient search,
 insertion, and deletion in the presence of a large number of items.
@@ -44,7 +44,7 @@ guarantee that each item is only visited once, thus ensuring an
 efficient traversal:
 
     reset(tree)
-    
+
     while (item := next(tree)) != END do
         # Do something with item
     loop
@@ -59,11 +59,11 @@ thus incurring a logarithmic cost to find the smallest item:
     function reset: tree
     begin
         tree.walk := tree.root
-    
+
         if tree.walk = null then
             return
         endif
-    
+
         while tree.walk.left <> null do
             tree.walk := tree.walk.left
         loop
@@ -80,11 +80,11 @@ can be continued with the next call to the function:
         if walk = null then
             return END
         endif
-    
+
         if walk.right <> null then
             stack.push(walk)
             walk := walk.right
-    
+
             while walk.left <> null do
                 stack.push(walk)
                 walk := walk.left
@@ -93,13 +93,13 @@ can be continued with the next call to the function:
             while true do
                 last := walk
                 walk := stack.pop()
-    
+
                 if last <> walk.right then
                     break
                 endif
             loop
         endif
-    
+
         return walk.item
     end
 
@@ -159,7 +159,7 @@ performance is achieved (each unique node is visited only once):
     begin
         walk := skip[0]
     end
-    
+
     function next: skip
     begin
         return (walk := walk.next) <> null
@@ -205,17 +205,19 @@ with a probability of 1/2. To find a number like this, one only has to
 perform a series of coin flips until the maximum height is reached, or a
 probability test fails:
 
+```c
     int rheight(int max)
     {
         int h = 1; /* Never return 0 */
-    
+
         while (h < max && rand() < RAND_MAX / 2)
         {
             ++h;
         }
-    
+
         return h;
     }
+```
 
 This is a simple solution, but it is not practical for the real world
 because it is too inefficient. Notice how **rand()** is called for every
@@ -233,29 +235,31 @@ the expensive random number generator once. The solution is simple. Just
 create a random number, then walk through the bits of the number testing
 for a 0 or a 1. An implementation is longer, but straightforward:
 
+```c
     int rheight(int max)
     {
         static int bits = 0;
         int h, found = 0;
-    
+
         for (h = 0; !found; h++)
         {
             if (bits == 0)
             {
                 bits = rand();
             }
-    
+
             found = bits % 2;
             bits = bits / 2;
         }
-    
+
         if (h >= max)
         {
             h = max - 1;
         }
-    
+
         return h;
     }
+```
 
 This algorithm is tuned for speed without sacrificing clarity. Notice
 how no test for h being greater than or equal to max is made until
@@ -266,12 +270,13 @@ all of the bits in the number to be used, thus reducing the number of
 calls to the random number generator, and also by replacing the
 divisions with faster bitwise operations:
 
+```c
     int rheight(int max)
     {
         static int bits = 0;
         static int reset = 0;
         int h, found = 0;
-    
+
         for (h = 0; !found; h++)
         {
             if (reset == 0)
@@ -279,19 +284,20 @@ divisions with faster bitwise operations:
                 bits = rand();
                 reset = sizeof(int) * CHAR_BIT;
             }
-    
+
             found = bits & 1;
             bits = bits >> 1;
             --reset;
         }
-    
+
         if (h >= max)
         {
             h = max - 1;
         }
-    
+
         return h;
     }
+```
 
 One important point to keep in mind with the bit stream solution is that
 it relies heavily on the bit length of the random number generator. On
@@ -325,18 +331,20 @@ respectively.
 The classic skip list node and list structures will look something like
 this in a realistic implementation:
 
+```c
     struct jsw_node
     {
         int data;
         int height;
         struct jsw_node **next;
     };
-    
+
     struct jsw_skip
     {
         struct jsw_node *head;
         int height;
     };
+```
 
 Notice how next is a pointer to a pointer so that the size of a node is
 relatively small while still allowing memory to be allocated to the
@@ -350,18 +358,20 @@ However, for the purposes of this tutorial, a much simpler alternative
 will be used so as to avoid memory allocations and better illustrate the
 workings of the data structure:
 
+```c
     struct jsw_node
     {
         int data;
         int height;
         struct jsw_node *next[MAX];
     };
-    
+
     struct jsw_skip
     {
         struct jsw_node *head;
         int height;
     };
+```
 
 The **height** field in **jsw\_skip** is for the current height of the
 list, which will be less than an upper limit, in this case defined as
@@ -374,19 +384,21 @@ A linked skip list node and list structure typically look like this,
 though the linked implementation is rare, and I have yet to see one in
 practice, we will cover the algorithms in detail for completeness:
 
+```c
     struct jsw_node
     {
         int data;
         struct jsw_node *next;
         struct jsw_node *down;
     };
-    
+
     struct jsw_skip
     {
         struct jsw_node *head;
         struct jsw_node *bottom;
         int height;
     };
+```
 
 The **down** and **next** links do exactly what you would expect. The
 **next** link moves to the next node on the current level and the
@@ -416,11 +428,12 @@ is the basis of all searching algorithms in a skip list, and searching
 is the basis of almost all other operations on a skip list. The
 implementation for search in a classic skip list is short and sweet:
 
+```c
     int jsw_find(struct jsw_skip *skip, int key)
     {
         struct jsw_node *it = skip->head;
         int i;
-    
+
         for (i = skip->height - 1; i >= 0; i--)
         {
             while (it->next[i] != NULL && key > it->next[i]->data)
@@ -428,9 +441,10 @@ implementation for search in a classic skip list is short and sweet:
                 it = it->next[i];
             }
         }
-    
+
         return it->next[0] ? it->next[0]->data : -1;
     }
+```
 
 Notice how the search finishes on the node before either the found item,
 or the place where the key would be. This can be useful for modularizing
@@ -451,22 +465,24 @@ Searching in a linked implementation is arguably even simpler in concept
 than in a classic implementation because it involves straight pointer
 chasing rather than a combination of pointer chasing and array indexing:
 
+```c
     int jsw_find(struct jsw_skip *skip, int key)
     {
         struct jsw_node *it = skip->head;
-    
+
         while (it->down != NULL)
         {
             while (it->next != NULL && key > it->next->data)
             {
                 it = it->next;
             }
-    
+
             it = it->down;
         }
-    
+
         return it->next ? it->next->data : -1;
     }
+```
 
 #### Finger search
 
@@ -481,38 +497,40 @@ and the new item to be searched for is close to the last search path.
 The simplest finger search by far is a dual search starting with the
 finger:
 
+```c
     int jsw_find(struct jsw_skip *skip, int key)
     {
         struct jsw_node *it = fix[skip->height - 1];
         int i = skip->height - 1;
-    
+
         for (i = skip->height - 1; i >= 0; i--)
         {
             while (it->next[i] != NULL && key > it->next[i]->data)
             {
                 it = it->next[i];
             }
-    
+
             fix[i] = it;
         }
-    
+
         if (key != it->next[0]->item)
         {
             it = skip->head;
-    
+
             for (i = skip->height - 1; i >= 0; i--)
             {
                 while (it->next[i] != NULL && key > it->next[i]->data)
                 {
                     it = it->next[i];
                 }
-    
+
                 fix[i] = it;
             }
         }
-    
+
         return it->next[0] ? it->next[0]->data : -1;
     }
+```
 
 First the finger path is searched, and the finger array is updated as
 the search progresses. If the finger search succeeds then the algorithm
@@ -554,7 +572,7 @@ because 7 is greater than 6, so 6 would be the next node:
     fix[2] = 3
     fix[1]
     fix[0]
-    
+
     *===========3-----------7-----------*
     *---1-------3---4-------7-------9---*
     *---1---2---3---4---5---7---8---9---*
@@ -567,7 +585,7 @@ after 4:
     fix[2] = 3
     fix[1] = 4
     fix[0]
-    
+
     *===========3-----------7-----------*
     *---1-------3===4-------7-------9---*
     *---1---2---3---4---5---7---8---9---*
@@ -581,7 +599,7 @@ update array is complete and the new node can be spliced into the list:
     fix[2] = 3
     fix[1] = 4
     fix[0] = 5
-    
+
     *===========3-----------7-----------*
     *---1-------3===<4-------7-------9---*
     *---1---2---3---4===5---7---8---9---*
@@ -595,7 +613,7 @@ splice is complete:
     fix[2] = 3
     fix[1] = 4
     fix[0] = 5
-    
+
     *=======================6---------------*
     *-----------3===========6---7-----------*
     *---1-------3---4=======6---7-------9---*
@@ -605,22 +623,23 @@ The code to perform this magic is short, simple, and uses the same
 search algorithm except with a minor modification for adding to the
 update array:
 
+```c
     int jsw_insert(struct jsw_skip *skip, int key)
     {
         struct jsw_node *it = skip->head;
         struct jsw_node *item = new_node(key);
         int i;
-    
+
         for (i = skip->height - 1; i >= 0; i--)
         {
             while (it->next[i] != NULL && key > it->next[i]->data)
             {
                 it = it->next[i];
             }
-    
+
             fix[i] = it;
         }
-    
+
         if (it->next[0] != NULL && it->next[0]->data == key)
         {
             return 0;
@@ -628,24 +647,25 @@ update array:
         else
         {
             int h;
-    
+
             if (item->height > skip->height)
             {
                 item->height = ++skip->height;
                 fix[item->height - 1] = skip->head;
             }
-    
+
             h = item->height;
-    
+
             while (--h >= 0)
             {
                 item->next[h] = fix[h]->next[h];
                 fix[h]->next[h] = item;
             }
         }
-    
+
         return 1;
     }
+```
 
 Alternatively, you can avoid the auxiliary array by splicing the links
 as you go down the search path, but this approach assumes that the item
@@ -657,6 +677,7 @@ searches the list for existence is needed, otherwise unwanted changes
 might be made to the structure before it is determined whether or not a
 duplicate is present:
 
+```c
     int jsw_insert(struct jsw_skip *skip, int key)
     {
         if (jsw_find(skip, key) == key)
@@ -668,19 +689,19 @@ duplicate is present:
             struct jsw_node *it = skip->head;
             struct jsw_node *item = new_node(key);
             int i;
-    
+
             if (item->height > skip->height)
             {
                 item->height = ++skip->height;
             }
-    
+
             for (i = skip->height - 1; i >= 0; i--)
             {
                 while (it->next[i] != NULL && key > it->next[i]->data)
                 {
                     it = it->next[i];
                 }
-    
+
                 if (i < item->height)
                 {
                     item->next[i] = it->next[i];
@@ -688,9 +709,10 @@ duplicate is present:
                 }
             }
         }
-    
+
         return 1;
     }
+```
 
 One of the key points in insertion is raising the height of the list if
 the height of the new node is taller than the list. In these examples,
@@ -700,22 +722,23 @@ list and the height of the new node. This variation is preferred because
 everyone probably reads the pseudocode in skip list reports and not the
 text. ;-) The changes are simple:
 
+```c
     int jsw_insert(struct jsw_skip *skip, int key)
     {
         struct jsw_node *it = skip->head;
         struct jsw_node *item = new_node(key);
         int i;
-    
+
         for (i = skip->height - 1; i >= 0; i--)
         {
             while (it->next[i] != NULL && key > it->next[i]->data)
             {
                 it = it->next[i];
             }
-    
+
             fix[i] = it;
         }
-    
+
         if (it->next[0] != NULL && it->next[0]->data == key)
         {
             return 0;
@@ -723,26 +746,28 @@ text. ;-) The changes are simple:
         else
         {
             int h;
-    
+
             while (item->height > skip->height)
             {
                 fix[skip->height++] = skip->head;
             }
-    
+
             h = item->height;
-    
+
             while (--h >= 0)
             {
                 item->next[h] = fix[h]->next[h];
                 fix[h]->next[h] = item;
             }
         }
-    
+
         return 1;
     }
+```
 
 The top-down approach can also be modified for for this variation:
 
+```c
     int jsw_insert(struct jsw_skip *skip, int key)
     {
         if (jsw_find(skip, key) == key)
@@ -754,19 +779,19 @@ The top-down approach can also be modified for for this variation:
             struct jsw_node *it = skip->head;
             struct jsw_node *item = new_node(key);
             int i;
-    
+
             while (item->height > skip->height)
             {
                 ++skip->height;
             }
-    
+
             for (i = skip->height - 1; i >= 0; i--)
             {
                 while (it->next[i] != NULL && key > it->next[i]->data)
                 {
                     it = it->next[i];
                 }
-    
+
                 if (i < item->height)
                 {
                     item->next[i] = it->next[i];
@@ -774,9 +799,10 @@ The top-down approach can also be modified for for this variation:
                 }
             }
         }
-    
+
         return 1;
     }
+```
 
 Which of these approaches (forced growth by one or unbounded growth) is
 better remains to be seen, though that leads me to believe that either
@@ -800,6 +826,7 @@ for arrays. As you already know, the top-down insertion requires that a
 prior search for existence be made if the skip list does not allow
 duplicate keys:
 
+```c
     int jsw_insert(struct jsw_skip *skip, int key)
     {
         if (jsw_find(skip, key) == key)
@@ -811,43 +838,44 @@ duplicate keys:
             struct jsw_node *it, *save = NULL;
             int h = rheight(MAX);
             int i;
-    
+
             if (h > skip->height)
             {
                 skip->head = new_node(-1, NULL, skip->head);
                 ++skip->height;
             }
-    
+
             it = skip->head;
-    
+
             for (i = skip->height; it != NULL; i--)
             {
                 while (it->next != NULL && key > it->next->data)
                 {
                     it = it->next;
                 }
-    
+
                 if (i <= h)
                 {
                     if (it->next == NULL || key != it->next->data)
                     {
                         it->next = new_node(key, it->next, NULL);
                     }
-    
+
                     if (save != NULL)
                     {
                         save->down = it->next;
                     }
-    
+
                     save = it->next;
                 }
-    
+
                 it = it->down;
             }
         }
-    
+
         return 1;
     }
+```
 
 This example shows a primary disadvantage of the linked approach. Rather
 than simply creating an array of pointers, each column must be
@@ -917,16 +945,18 @@ because you might find a use for it that you never saw before.
 The classic skip list promotes easy traversal because you the 0th index
 of the head array can act as a starting point with no work at all:
 
+```c
     void jsw_traverse(struct jsw_skip *skip, void (*action)(struct jsw_node*))
     {
         struct jsw_node *it = skip->head->next[0];
-    
+
         while (it != NULL)
         {
             action(it);
             it = it->next[0];
         }
     }
+```
 
 #### Linked traversal
 
@@ -936,37 +966,41 @@ a naive linked skip list, the traversal would end up starting at the
 top, then finding the bottom, then performing a traversal in an L-shaped
 pattern:
 
+```c
     void jsw_traverse(struct jsw_skip *skip, void (*action)(struct jsw_node*))
     {
         struct jsw_node *it = skip->head;
-    
+
         while (it->down != NULL)
         {
             it = it->down;
         }
-    
+
         while (it != NULL)
         {
             it = it->next;
             action(it);
         }
     }
+```
 
 The linked skip list in this tutorial uses a bottom pointer to keep
 track of the head of the lowest level so as to avoid that first step.
 Now the traversal looks more like the classic traversal and is also more
 efficient because it does not need to find the bottom first:
 
+```c
     void jsw_traverse(struct jsw_skip *skip, void (*action)(struct jsw_node*))
     {
         struct jsw_node *it = skip->bottom->next;
-    
+
         while (it != NULL)
         {
             action(it);
             it = it->next;
         }
     }
+```
 
 #### Classic deletion
 
@@ -975,22 +1009,23 @@ usual, a search is performed and the update array is used to save the
 path. Then a simple linked list removal is performed for each level. The
 traditional code for a classic skip list is:
 
+```c
     int jsw_remove(struct jsw_skip *skip, int key)
     {
         struct jsw_node *it = skip->head;
         struct jsw_node *save;
         int i;
-    
+
         for (i = skip->height - 1; i >= 0; i--)
         {
             while (it->next[i] != NULL && key > it->next[i]->data)
             {
                 it = it->next[i];
             }
-    
+
             fix[i] = it;
         }
-    
+
         if (it->next[0] == NULL || it->next[0]->data != key)
         {
             return 0;
@@ -998,7 +1033,7 @@ traditional code for a classic skip list is:
         else
         {
             save = fix[0]->next[0];
-    
+
             for (i = 0; i < skip->height; i++)
             {
                 if (fix[i]->next[i] != NULL)
@@ -1006,22 +1041,23 @@ traditional code for a classic skip list is:
                     fix[i]->next[i] = fix[i]->next[i]->next[i];
                 }
             }
-    
+
             while (skip->height > 0)
             {
                 if (skip->head->next[skip->height - 1] != NULL)
                 {
                     break;
                 }
-    
+
                 skip->head->next[--skip->height] = NULL;
             }
         }
-    
+
         free(save);
-    
+
         return 1;
     }
+```
 
 Just as with insertion, deletion can remove the item as the search moves
 down the list rather than by building an array for fixing links. This
@@ -1032,6 +1068,7 @@ existence search beforehand as some part of the search will be performed
 anyway. Of course, the code is easier to understand with the preliminary
 search:
 
+```c
     int jsw_remove(struct jsw_skip *skip, int key)
     {
         if (jsw_find(skip, key) != key)
@@ -1043,35 +1080,36 @@ search:
             struct jsw_node *it = skip->head;
             struct jsw_node *save;
             int i;
-    
+
             for (i = skip->height - 1; i >= 0; i--)
             {
                 while (it->next[i] != NULL && key > it->next[i]->data)
                 {
                     it = it->next[i];
                 }
-    
+
                 if (i == 0)
                 {
                     save = it->next[0];
                 }
-    
+
                 if (it->next[i] != NULL)
                 {
                     it->next[i] = it->next[i]->next[i];
                 }
-    
+
                 if (skip->head->next[i] == NULL)
                 {
                     --skip->height;
                 }
             }
-    
+
             free(save);
         }
-    
+
         return 1;
     }
+```
 
 #### Linked deletion
 
@@ -1080,6 +1118,7 @@ classic deletion. I hesitated to provide code for it to help keep the
 tutorial shorter, but for completeness, here is the code for linked
 deletion using a top-down approach that the linked structure encourages:
 
+```c
     int jsw_remove(struct jsw_skip *skip, int key)
     {
         if (jsw_find(skip, key) != key)
@@ -1090,27 +1129,28 @@ deletion using a top-down approach that the linked structure encourages:
         {
             struct jsw_node *it = skip->head;
             struct jsw_node *save = NULL;
-    
+
             while (it != NULL)
             {
                 while (it->next != NULL && key > it->next->data)
                 {
                     it = it->next;
                 }
-    
+
                 if (it->next != NULL && key == it->next->data)
                 {
                     save = it->next;
                     it->next = save->next;
                     free(save);
                 }
-    
+
                 it = it->down;
             }
         }
-    
+
         return 1;
     }
+```
 
 #### Balancing
 
@@ -1137,37 +1177,37 @@ list created by this scheme is:
 
     Insert 0:
     *---0---*
-    
+
     Insert 1:
     *---0---1---*
-    
+
     Insert 2:
     *---0---1---2---*
-    
+
     Insert 3:
     *-------1-----------*
     *---0---1---2---3---*
-    
+
     Insert 4:
     *-------1---------------*
     *---0---1---2---3---4---*
-    
+
     Insert 5:
     *-------1-------3-----------*
     *---0---1---2---3---4---5---*
-    
+
     Insert 6:
     *-------1-------3---------------*
     *---0---1---2---3---4---5---6---*
-    
+
     Insert 7:
     *-------1-------3-------5-----------*
     *---0---1---2---3---4---5---6---7---*
-    
+
     Insert 8:
     *-------1-------3-------5---------------*
     *---0---1---2---3---4---5---6---7---8---*
-    
+
     Insert 9:
     *---------------3---------------------------*
     *-------1-------3-------5-------7-----------*
@@ -1206,22 +1246,24 @@ and point to themselves. This approach ensures that pointer chases will
 remain within the data structure, and the large number of tests for a
 null pointer can be avoided. Here are the updated types:
 
+```c
     /* Max key for signed integers */
     #define MAX_KEY INT_MAX
-    
+
     struct jsw_node
     {
         int data;
         struct jsw_node *n;
         struct jsw_node *d;
     };
-    
+
     struct jsw_skip
     {
         struct jsw_node *head;
         struct jsw_node *bottom;
         struct jsw_node *tail;
     };
+```
 
 The **MAX\_KEY** value can be modified to work with any type as long as
 there is a representation for that type that is not allowed in the list.
@@ -1231,8 +1273,10 @@ keys, so **MAX\_KEY** could be defined as the following because a
 lexicographical comparison stops on the first differing character and
 uses it as the result:
 
+```c
     /* Max key for strings */
     #define MAX_KEY "\x7f"
+```
 
 The jsw\_node structure remains mostly unchanged, but because long
 chains of pointer chases will be used, the names next and down were
@@ -1246,45 +1290,48 @@ as well, because the sentinels need to be initialized. So we will use a
 return it. The **new\_node** function is a trivial exercise, but in this
 tutorial I will assume it cannot fail:
 
+```c
     struct jsw_skip *new_skip()
     {
         struct jsw_skip *skip = malloc(sizeof *skip);
-    
+
         if (skip == NULL)
         {
             return NULL;
         }
-    
+
         skip->bottom = new_node(MAX_KEY, NULL, NULL);
         skip->tail = new_node(MAX_KEY, NULL, NULL);
         skip->head = new_node(MAX_KEY, skip->tail, skip->bottom);
-    
+
         skip->bottom->r = skip->bottom;
         skip->bottom->d = skip->bottom;
         skip->tail->r = skip->tail;
-    
+
         return skip;
     }
+```
 
 With a fresh new skip list created, we can proceed to perform balanced
 insertions. Amazingly enough, the code to do this is clean and simple,
 primarily because of the sentinels protecting against the need for
 special case tests:
 
+```c
     int jsw_insert(struct jsw_skip *skip, int key)
     {
         struct jsw_node *it;
-    
+
         /* Set search params for insertion */
         skip->bottom->data = key;
-    
+
         for (it = skip->head; it != skip->bottom; it = it->d)
         {
             while (key > it->data)
             {
                 it = it->r;
             }
-    
+
             /* Raise column */
             if (it->data > it->d->r->r->data)
             {
@@ -1296,15 +1343,16 @@ special case tests:
                 return 0;
             }
         }
-    
+
         /* Grow list if necessary */
         if (skip->head->r != skip->tail)
         {
             skip->head = new_node(MAX_KEY, skip->tail, skip->head);
         }
-    
+
         return 1;
     }
+```
 
 The first thing of note is that the search key is assigned to the bottom
 sentinel. This is done to ease searching by ensuring that all searches
@@ -1336,18 +1384,20 @@ a structure that has an iterator member, just like the it that we have
 been using, a save member for generic odd-jobs, and variables for saving
 the previous and next gaps, as well useful key values:
 
+```c
     struct j_walker
     {
         struct jsw_node *it;   /* Current item */
         struct jsw_node *prev; /* Previous gap */
         struct jsw_node *next; /* Next gap */
-    
+
         struct jsw_node *save; /* Temporary holder */
         int lastb;             /* Previous key bottom */
         int lastu;             /* Previous key up */
     };
-    
+
     static struct j_walker w; /* Variables for deletion */
+```
 
 The **jsw\_remove** function relies on other functions to handle the
 balancing and removal of the lowest level node, but a final second pass
@@ -1356,13 +1406,14 @@ first, but it greatly simplifies the balancing step. Aside from
 maintaining the extra save points in the **j\_walker** struct, the code
 is simple and should be familiar by now:
 
+```c
     int jsw_remove(struct jsw_skip *skip, int key)
     {
         /* Set search params for deletion */
         skip->bottom->data = key;
         w.lastu = skip->head->data;
         w.it = skip->head->d;
-    
+
         for (; w.it != skip->bottom; w.it = w.next)
         {
             while (key > w.it->data)
@@ -1370,29 +1421,29 @@ is simple and should be familiar by now:
                 w.prev = w.it;
                 w.it = w.it->r;
             }
-    
+
             if (rebalance(skip) == 0)
             {
                 return 0;
             }
         }
-    
+
         /* Fix columns taller than 1 */
         w.it = skip->head->d;
-    
+
         for (; w.it != skip->bottom; w.it = w.it->d)
         {
             while (key > w.it->data)
             {
                 w.it = w.it->r;
             }
-    
+
             if (key == w.it->data)
             {
                 w.it->data = w.lastb;
             }
         }
-    
+
         /* Shrink if necessary */
         if (skip->head->d->r == skip->tail)
         {
@@ -1400,9 +1451,10 @@ is simple and should be familiar by now:
             skip->head = w.save->d;
             free(w.save);
         }
-    
+
         return 1;
     }
+```
 
 Now we wander into the confusing world of the **rebalance** function.
 There are four cases for a top-down deletion that mirrors the borrow and
@@ -1410,10 +1462,11 @@ merge technique used by B-trees. Simply look at the gaps and make sure
 that they are greater than or equal to 1, and also less than 4. The code
 to handle a gap is simple once you understand the concept:
 
+```c
     static void fix_gap(struct jsw_skip *skip)
     {
         w.save = w.it->r;
-    
+
         if (w.save->data == w.save->d->r->data || w.next == skip->bottom)
         {
             /* Lower next column */
@@ -1428,11 +1481,13 @@ to handle a gap is simple once you understand the concept:
             w.save->d = w.save->d->r;
         }
     }
+```
 
 Unfortunately, this does not work for the last gap, where the previous
 gap needs to be adjusted as well. Fortunately, while the code to handle
 the last gap is a special case, it is relatively short:
 
+```c
     static void last_gap(struct jsw_skip *skip)
     {
         if (w.prev->data <= w.prev->d->r->data)
@@ -1442,7 +1497,7 @@ the last gap is a special case, it is relatively short:
             {
                 w.lastb = w.prev->data;
             }
-    
+
             w.prev->r = w.it->r;
             w.prev->data = w.it->data;
             free(w.it);
@@ -1459,20 +1514,22 @@ the last gap is a special case, it is relatively short:
             {
                 w.save = w.prev->d->r->r;
             }
-    
+
             w.prev->data = w.save->data;
             w.it->d = w.save->r;
         }
     }
+```
 
 The last piece of the puzzle is a rebalance function that puts together
 **fix\_gap** and **last\_gap**, as well as handles the piddling pointer
 management and determines if the key is even in the skip list:
 
+```c
     static int rebalance(struct jsw_skip *skip)
     {
         w.next = w.it->d;
-    
+
         if (w.it->data == w.next->r->data)
         {
             if (w.it->data != w.lastu)
@@ -1488,11 +1545,12 @@ management and determines if the key is even in the skip list:
         {
             return 0;
         }
-    
+
         w.lastu = w.it->data;
-    
+
         return 1;
     }
+```
 
 Now, this process is very complicated compared to all of the other skip
 list algorithms. A balanced skip list is much faster than a randomized
@@ -1502,27 +1560,29 @@ take a trick from hash tables, where each node contains a flag saying
 whether it contains a deleted key or not. Then deletion becomes nothing
 more than a search that sets the flag as necessary:
 
+```c
     int jsw_remove(struct jsw_skip *skip, int key)
     {
         struct jsw_node *it = skip->head;
         int rc = 0;
-    
+
         for (; it != skip->bottom; it = it->d)
         {
             while (key > it->data)
             {
                 it = it->r;
             }
-    
+
             if (key == it->data)
             {
                 it->deleted = 1;
                 rc = 1;
             }
         }
-    
+
         return rc;
     }
+```
 
 Of course, this only delays the problem, but if deletions are
 considerably less frequent than insertions, this approach is an

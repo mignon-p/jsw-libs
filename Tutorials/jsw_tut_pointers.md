@@ -1,6 +1,6 @@
 # Pointers
 
-  
+
 
 Most newcomers to programming have trouble with the concept of pointers.
 This is almost entirely due to the reputation that pointers have for
@@ -27,8 +27,10 @@ unsigned char represents a byte. On the newer Pentium processors (Pro,
 II, III, and IV), the address bus supports 36 bits, so the array could
 be represented in C as:
 
+```c
     #define ADDRESS_BUS_SIZE 36 /* Pentium 4: 36-bit address bus */
     unsigned char memory[1 << ADDRESS_BUS_SIZE];
+```
 
 Naturally, this code is unlikely to actually run, but if you know how to
 use arrays, it gives you an idea of how addresses in memory work. Now,
@@ -50,31 +52,33 @@ those that do have performance penalties for accessing a byte with an
 unexpected alignment. Consider this example where memory is divided into
 two byte integers:
 
+```c
     #include <stdio.h>
     #include <string.h>
-    
+
     #define ADDRESS_BUS_SIZE 20 /* 2^20 address bus */
     unsigned char memory[1 << ADDRESS_BUS_SIZE];
-    
+
     int main ( void )
     {
       int i;
       unsigned short val = 12345;
-    
+
       for ( i = 0x12340; i < 0x1234A; i += 2 ) {
         memcpy ( &memory[i], &val, sizeof val );
         ++val;
       }
-    
+
       val = 0;
-    
+
       for ( i = 0x12340; i < 0x1234A; i += 2 ) {
         memcpy ( &val, &memory[i], sizeof val );
         printf ( "%hu\n", val );
       }
-    
+
       return 0;
     }
+```
 
 This naturally assumes that unsigned short is two bytes, but at the time
 of writing, this is a fairly safe assumption. Looking at the memory as
@@ -83,7 +87,7 @@ odd addresses are accessed directly. While such an operation may be
 legal depending on the processor, it may take extra instructions to
 disambiguate the request from the more common even-address operation:
 
-``` 
+```
  Byte1    Byte2
 -----------------
 0x12340 | 0x12341 /* Contains 12345 */
@@ -141,8 +145,10 @@ pointer. Assume that we have a pointer p (represented as an index) that
 contains an address **0x12340**. Using the array example, it might look
 like this:
 
+```c
     p = 0x12340;
     memory[p] = 212;
+```
 
 Notice that the immediate value of **p** is the address, **0x12340**,
 but through **p** we can assign **212** to the integer at that address.
@@ -163,9 +169,11 @@ functionality is very consistent with pointers. If you need to change
 the address of a pointer when you do not have access to the original
 pointer, a pointer to that pointer can be used:
 
+```c
     p1 = 0x12340;
     memory[p1] = 0x12342;
     memory[memory[p1]] = 212;
+```
 
 This example is somewhat convoluted, but the key to understanding it is
 to notice that **p1** is a pointer, but so is **memory\[p1\]**. This is
@@ -195,11 +203,11 @@ of it. For example (using a fictional programming language):
     begin
       x := x + 1
     end
-    
+
     program
     begin
       i := 0
-    
+
       while i < 10 do
         increment ( i )
         print i
@@ -217,7 +225,7 @@ Removing all of the hidden framework, the example would look like this:
     program
     begin
       i := 0
-    
+
       while i < 10 do
         x := i
         x := x + 1
@@ -236,11 +244,11 @@ corrected like so:
     begin
       deref x := deref x + 1
     end
-    
+
     program
     begin
       i := 0
-    
+
       while i < 10 do
         increment ( addressof i )
         print i
@@ -278,37 +286,49 @@ To declare a pointer, simply place an asterisk between the type and
 identifier of a variable. Any number of levels of indirection can be
 created by adding more asterisks:
 
+```c
     int *i;    /* Pointer to int */
     double *d; /* Pointer to double */
     char **p;  /* Pointer to pointer to char */
+```
 
 Multiple pointers can be declared on the same line, but care must be
 taken to use the asterisk for every variable:
 
+```c
     int *p, *q;
+```
 
 If the asterisk is omitted, then the variable without an asterisk is not
 a pointer:
 
+```c
     int *p, q; /* p is a pointer, but q is not! */
+```
 
 A pointer can have two levels of constness. The first level is for the
 object being pointed to, and in such a case, the keyword const will need
 to be inserted on the left side of the asterisk. As usual, const can be
 on either side of the type:
 
+```c
     const int *i; /* Pointer to const int */
     int const *j; /* Pointer to const int */
+```
 
 When a pointer points to a const type, the pointer can be changed, but
 the value pointed to cannot. To create a const pointer, place the const
 keyword on the right side of the asterisk, but before the identifier:
 
+```c
     int * const i; /* Const pointer to non-const int */
+```
 
 These two levels can be combined to create a const pointer to const:
 
+```c
     const int * const i; /* Const pointer to const int */
+```
 
 The two operators needed for working with a pointer are the indirection
 operator, **\***, and the address-of operator, **&**. The address-of
@@ -316,19 +336,23 @@ operator is a unary operator that returns the address of an object that
 has an address. It basically “makes a pointer” out of an object by
 evaluating to an address that can be assigned to a pointer:
 
+```c
     int i;
     int *p;
-    
+
     p = &i; /* p now "points to" i */
+```
 
 The indirection operator does just that; it dereferences a pointer.
 Provided the pointer has been assigned an address, indirection will
 return the expected value:
 
+```c
     int i = 123;
     int *p = &i;
-    
+
     printf ( "%d\n", *p ); /* Prints 123 */
+```
 
 A pointer in C and C++ can have one of three values. First, a pointer
 can point to the address of an object. This is the most common value.
@@ -342,42 +366,44 @@ that a pointer be initialized before it is used.
 
 Here is a complete example that shows these operations in action:
 
+```c
     #include <stdio.h>
-    
+
     int main ( void )
     {
       int i = 123;
       int j = 321;
       int *p = &i;
       int *q;
-    
+
       printf ( "i is %d\n", i );
       printf ( "*p is %d\n\n", *p );
-    
+
       q = p; /* q points to p's value, which is i */
-    
+
       printf ( "i is %d\n", i );
       printf ( "*p is %d\n", *p );
       printf ( "*q is %d\n\n", *q );
-    
+
       /* Increment i three times */
       ++*p;
       ++*q;
       ++i;
-    
+
       printf ( "i is %d\n", i );
       printf ( "*p is %d\n", *p );
       printf ( "*q is %d\n\n", *q );
-    
+
       /* Reassign p */
       p = &j;
-    
+
       printf ( "i is %d\n", i );
       printf ( "*p is %d\n", *p );
       printf ( "*q is %d\n\n", *q );
-    
+
       return 0;
     }
+```
 
 #### Types of pointers
 
@@ -396,10 +422,12 @@ pattern of a null pointer is all bits zero. It is considered good style
 to initialize all pointers to either an object's address, or null when
 first declared:
 
+```c
     int i;
-    
+
     int *p = &i;  /* Points to i */
     float *q = 0; /* Null pointer */
+```
 
 For your convenience, several headers define a macro called **NULL**
 that correctly defines a null pointer value. The most common headers for
@@ -407,9 +435,11 @@ this macro are **stdio.h**, **stdlib.h**, and **stddef.h**. (the C++
 headers would be **cstdio**, **cstdlib**, and **cstddef**). Using
 **NULL**, it is well understood that a null pointer is intended:
 
+```c
     #include <stddef.h>
-    
+
     float *q = NULL;
+```
 
 As expected, a null pointer cannot be dereferenced or bad things will
 happen. Unpredictable bad things. But always bad things. No good can
@@ -444,11 +474,15 @@ other, less awkward solutions exist. In C, however, the pointer to
 structure. Pointers to **void** are move convenient in C because a cast
 not required to convert to and from a pointer to **void**. For example:
 
+```c
     int *p = malloc ( 100 * sizeof *p ); /* Allocate 100 integers */
+```
 
 In C++, this line of code would need to include a cast to **int\***:
 
+```c
     int *p = static_cast<int*> ( malloc ( 100 * sizeof *p ) );
+```
 
 #### Pointers to user-defined types
 
@@ -459,27 +493,31 @@ indirection operator, the only way to access a member of a user-defined
 type through a pointer is to surround the indirection with parentheses
 and then apply the member access operator to the result:
 
+```c
     struct s {
       int i;
     };
-    
+
     struct s t;
     struct s *p = &t;
-    
+
     (*p).i = 123;
+```
 
 Fortunately, the designers of C realized how awkward this is and added a
 special member access operator for pointers to user-defined types. The
 so called “arrow” operator is this addition:
 
+```c
     struct s {
       int i;
     };
-    
+
     struct s t;
     struct s *p = &t;
-    
+
     p->i = 123;
+```
 
 #### Pointers to pointers
 
@@ -487,11 +525,13 @@ As mentioned several times before, a pointer can point to another
 pointer because a pointer is just another variable with an address. The
 syntax is consistent and intuitive:
 
+```c
     int i = 123;
     int *p = &i;
     int **pp = &p;
-    
+
     printf ( "%d\n", **pp );
+```
 
 #### Pointers to functions
 
@@ -501,16 +541,17 @@ incredibly useful for providing callback functions where a given
 function performs an operation that the client code defines. A standard
 example is **qsort** in the standard C library header **stdlib.h**:
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
-    
+
     #define length(x) ( sizeof ( x ) / sizeof *( x ) )
-    
+
     int compare ( const void *a, const void *b )
     {
       const int *ia = a;
       const int *ib = b;
-    
+
       if ( *ia < *ib )
         return -1;
       else if ( *ia > *ib )
@@ -518,24 +559,25 @@ example is **qsort** in the standard C library header **stdlib.h**:
       else
         return 0;
     }
-    
+
     int main ( void )
     {
       int a[] = {9,8,7,6,5,4,3,2,1,0};
       int i;
-    
+
       for ( i = 0; i < length ( a ); i++ )
         printf ( "%-2d", a[i] );
       printf ( "\n" );
-    
+
       qsort ( a, length ( a ), sizeof a[0], compare );
-    
+
       for ( i = 0; i < length ( a ); i++ )
         printf ( "%-2d", a[i] );
       printf ( "\n" );
-    
+
       return 0;
     }
+```
 
 Notice that in the call to **qsort**, we are passing the name of a
 function. The address-of operator is not required because the compiler
@@ -551,7 +593,9 @@ A pointer to function is declared just like a regular function except an
 asterisk precedes the function name, and both the name and asterisk must
 be surrounded with parentheses:
 
+```c
     void (*fp) ( int );
+```
 
 In this example, **fp** is a variable. It is a pointer to a function
 that takes an integer argument and returns no value. Without the
@@ -567,17 +611,21 @@ this feature is not often used. To create a pointer to an array, simply
 declare an array and then, just as with a pointer to a function, add an
 asterisk and surround both the name and the asterisk with parentheses:
 
+```c
     int (*pa)[10];
+```
 
 This example declares a pointer to an array of ten integers. The
 awkwardness comes from trying to subscript a pointer to an array, where
 the same problem as with pointers to user-defined types rears its head
 again. Unfortunately, this time there is no operator to save the day:
 
+```c
     int a[5] = {1,2,3,4,5};
     int (*pa)[5] = &a;
-    
+
     printf ( "%d\n", (*pa)[2] ); /* Prints 3 */
+```
 
 #### Pointers to members (C++ only)
 
@@ -586,26 +634,28 @@ object or pointer to object. In other words, you can use a pointer to
 member to access a member only knowing its type. The syntax is esoteric,
 at best:
 
+```c
     #include <iostream>
-    
+
     struct s {
       int i;
       void f() { std::cout<<"i is "<< i <<'\n'; }
     };
-    
+
     int main()
     {
       s a, b;
-    
+
       int s::*pi = &s::i;
       void (s::*pf)() = &s::f;
-    
+
       a.*pi = 10;
       b.*pi = 20;
-    
+
       (a.*pf)();
       (b.*pf)();
     }
+```
 
 A more realistic use is printing the contents of a **map**. Since the
 value of a **map** element is a **pair**, you might want to print a
@@ -613,33 +663,35 @@ columnar list with the first value on each column of a row and the
 second value on the same column of the next row. A clever programmer
 would factor this out into a single function using a pointer to member:
 
+```c
     #include <iomanip>
     #include <iostream>
     #include <map>
     #include <utility>
-    
+
     void print ( std::map<int, int>& table, int std::pair<int, int>::*item )
     {
       std::map<int, int>::iterator it = table.begin();
-    
+
       while ( it != table.end() ) {
         std::cout<< std::left << std::setw ( 3 ) << ( (std::pair<int, int>)*it ).*item;
         ++it;
       }
     }
-    
+
     int main()
     {
       std::map<int, int> table;
-    
+
       for ( int i = 0; i < 10; i++ )
         table[i] = i * 10;
-    
+
       print ( table, &std::pair<int, int>::first );
       std::cout<<'\n';
       print ( table, &std::pair<int, int>::second );
       std::cout<<'\n';
     }
+```
 
 Now instead of maintaining two loops, or two functions, or something
 worse, the programmer only needs to control the formatting from a single
@@ -660,18 +712,20 @@ Adding an integer to a pointer causes the pointer to move “forward”,
 toward the end of the array. You can add any integral value to a pointer
 as long as it does not exceed the boundaries of the array:
 
+```c
     #include <stdio.h>
-    
+
     int main ( void )
     {
       int a[] = {1,2,3,4,5};
       int *p;
-    
+
       for ( p = a; p != a + 5; p++ )
         printf ( "%d\n", *p );
-    
+
       return 0;
     }
+```
 
 This example introduces three important concepts. The first, that the
 address-of operator is not required to assign the address of an array to
@@ -684,18 +738,20 @@ be compared with the relational operators, but the details will be
 provided later. The next example does the same thing as the previous
 example except it increments the pointer by two instead of one:
 
+```c
     #include <stdio.h>
-    
+
     int main ( void )
     {
       int a[] = {1,2,3,4,5, 6};
       int *p;
-    
+
       for ( p = a; p != a + 5; p += 2 )
         printf ( "%d\n", *p );
-    
+
       return 0;
     }
+```
 
 Notice that an even number of elements is used because incrementing the
 pointer by two would exceed the boundaries of the array. The comparison
@@ -711,18 +767,20 @@ within the same array. The result of subtraction is the distance between
 the two pointers. The result can be either negative or positive
 depending on the relationship of the pointers:
 
+```c
     #include <stdio.h>
-    
+
     int main ( void )
     {
       int a[] = {1,2,3,4,5};
       int *p = a, *q = a + 5;
-    
+
       printf ( "%td\n", p - q );
       printf ( "%td\n", q - p );
-    
+
       return 0;
     }
+```
 
 The result type of pointer subtraction is **ptrdiff\_t**, a typedef for
 a signed integral value. Note that most C compilers at the time of
@@ -731,18 +789,20 @@ prints a **ptrdiff\_t** value (it was added in the C99 standard). On
 those compilers, a hack to force the value to the largest possible
 signed integer is required:
 
+```c
     #include <stdio.h>
-    
+
     int main ( void )
     {
       int a[] = {1,2,3,4,5};
       int *p = a, *q = a + 5;
-    
+
       printf ( "%ld\n", (long)( p - q ) );
       printf ( "%ld\n", (long)( q - p ) );
-    
+
       return 0;
     }
+```
 
 #### Pointer comparisons
 
@@ -780,15 +840,17 @@ ampersand is also used as the address-of operator with pointers. A
 reference must be initialized, therefore there is no such thing as an
 uninitialized reference:
 
+```c
     #include <iostream>
-    
+
     int main()
     {
       int i = 123;
       int& s = i;
-    
+
       std::cout<< s <<'\n';
     }
+```
 
 Because a reference is just another name for the object it refers to,
 there are no operations on references, per se. This makes using
@@ -819,14 +881,16 @@ Unlike with pointers, references to user-defined type can use the member
 access operator and do not need a special operator, as pointers need the
 arrow operator:
 
+```c
     struct s {
       int i;
     };
-    
+
     struct s t;
     struct s& r = t;
-    
+
     r.i = 123;
+```
 
 #### References to pointers
 
@@ -835,8 +899,10 @@ ampersand in a reference declaration, and the asterisk of a pointer is a
 part of the type, the declaration for a reference to a pointer might
 look a little funny:
 
+```c
     char *p;
     char*& r = p;
+```
 
 This is logical, but not immediately obvious at first glance. It helps
 to read the declaration from right to left. When you do that, it makes
@@ -861,20 +927,22 @@ A reference to an array is far more useful than a pointer to an array.
 The syntax is, like references to functions, a pointer to an array with
 the asterisk replaced by an ampersand:
 
+```c
     #include <iostream>
-    
+
     void print ( int (&ra)[5] )
     {
       for ( int i = 0; i < sizeof ra / sizeof ra[0]; i++ )
         std::cout<< ra[i] <<'\n';
     }
-    
+
     int main()
     {
       int a[] = {1,2,3,4,5};
-    
+
       print ( a );
     }
+```
 
 The biggest benefit to using a reference to an array over a pointer to
 an array is that the **sizeof** trick for determining the size of an
@@ -897,51 +965,55 @@ pass-by-value. No tutorial on pointers would be complete without the
 canonical swap example. Assume that you want to swap two integers. A
 first attempt might look like this:
 
+```c
     #include <stdio.h>
-    
+
     void swap ( int a, int b )
     {
       int save = a;
       a = b;
       b = save;
     }
-    
+
     int main ( void )
     {
       int a = 10;
       int b = 20;
-    
+
       printf ( "a: %d, b: %d\n", a, b );
       swap ( a, b );
       printf ( "a: %d, b: %d\n", a, b );
-    
+
       return 0;
     }
+```
 
 Of course, that does not work because arguments are passed by value in
 C. The solution is to pass pointers to **int**, so that the address can
 be dereferenced and the actual value modified instead of a copy:
 
+```c
     #include <stdio.h>
-    
+
     void swap ( int *a, int *b )
     {
       int save = *a;
       *a = *b;
       *b = save;
     }
-    
+
     int main ( void )
     {
       int a = 10;
       int b = 20;
-    
+
       printf ( "a: %d, b: %d\n", a, b );
       swap ( &a, &b );
       printf ( "a: %d, b: %d\n", a, b );
-    
+
       return 0;
     }
+```
 
 This works as expected, though the code is no longer as clean. Being
 able to change the value of an object from within a separate function is
@@ -949,30 +1021,32 @@ the first reason for using pointers to pass an object to a function. The
 same rule applies for pointers. Assume that you want to pass a pointer
 to a function to allocate memory to it. The following does not work:
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
-    
+
     void alloc ( int *p )
     {
       p = malloc ( 10 * sizeof *p );
-    
+
       if ( p == NULL )
         printf ( "Memory exhausted\n" );
     }
-    
+
     int main ( void )
     {
       int *p = NULL;
-    
+
       alloc ( p );
-    
+
       if ( p == NULL )
         printf ( "alloc did not work\n" );
       else
         printf ( "alloc worked!\n" );
-    
+
       return 0;
     }
+```
 
 Well, it works as far as an example in that it prints “alloc did not
 work”, but if we wanted to use the memory allocated by **alloc** back in
@@ -983,30 +1057,32 @@ and memory assigned to the original pointer, just like with the **swap**
 example, except this time using the address of a pointer instead of the
 address of an integer:
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
-    
+
     void alloc ( int **p )
     {
       *p = malloc ( 10 * sizeof **p );
-    
+
       if ( *p == NULL )
         printf ( "Memory exhausted\n" );
     }
-    
+
     int main ( void )
     {
       int *p = NULL;
-    
+
       alloc ( &p );
-    
+
       if ( p == NULL )
         printf ( "alloc did not work\n" );
       else
         printf ( "alloc worked!\n" );
-    
+
       return 0;
     }
+```
 
 Now **alloc** will work as expected. If **malloc** fails, an error is
 printed, but if **malloc** does not fail, “alloc worked\!” is printed,
@@ -1018,21 +1094,22 @@ Another reason for passing pointers instead of the original object is
 when the object is very large, and making a copy would be an expensive
 operation:
 
+```c
     #include <stdio.h>
-    
+
     struct s {
       char name[256];
       char address[1024];
       char phone[20];
     };
-    
+
     void f ( struct s arg )
     {
       puts ( arg.name );
       puts ( arg.address );
       puts ( arg.phone );
     }
-    
+
     int main ( void )
     {
       struct s arg = {
@@ -1040,11 +1117,12 @@ operation:
         "123 Nowhere Lane, Some Place, Some Country",
         "1-111-111-1111",
       };
-    
+
       f ( arg );
-    
+
       return 0;
     }
+```
 
 With a size of at least 1300 bytes, **struct s** is somewhat large.
 Passing an instance of that structure by value would require all of the
@@ -1052,21 +1130,22 @@ data to be copied, which might be very slow or require a lot of CPU
 cycles. So, rather than pass that big object, it makes sense to pass a
 (significantly smaller) pointer to the object:
 
+```c
     #include <stdio.h>
-    
+
     struct s {
       char name[256];
       char address[1024];
       char phone[20];
     };
-    
+
     void f ( struct s *arg )
     {
       puts ( arg->name );
       puts ( arg->address );
       puts ( arg->phone );
     }
-    
+
     int main ( void )
     {
       struct s arg = {
@@ -1074,11 +1153,12 @@ cycles. So, rather than pass that big object, it makes sense to pass a
         "123 Nowhere Lane, Some Place, Some Country",
         "1-111-111-1111",
       };
-    
+
       f ( &arg );
-    
+
       return 0;
     }
+```
 
 Of course, because **f** has no intention of changing any of the value
 of its argument, this might introduce a bug if any changes are
@@ -1088,23 +1168,24 @@ pointer points to should not be modified, a pointer to **const** can be
 passed instead, thus telling the compiler to warn about possible
 modifications to the object:
 
+```c
     #include <stdio.h>
-    
+
     struct s {
       char name[256];
       char address[1024];
       char phone[20];
     };
-    
+
     void f ( const struct s *arg )
     {
       arg->name[0] = 'j'; /* Error! arg->name is const */
-    
+
       puts ( arg->name );
       puts ( arg->address );
       puts ( arg->phone );
     }
-    
+
     int main ( void )
     {
       struct s arg = {
@@ -1112,11 +1193,12 @@ modifications to the object:
         "123 Nowhere Lane, Some Place, Some Country",
         "1-111-111-1111",
       };
-    
+
       f ( &arg );
-    
+
       return 0;
     }
+```
 
 Those are the two most common reasons for passing a pointer to a
 function as an argument. However, pointers can also be returned from
@@ -1128,29 +1210,31 @@ pitfall of returning pointers is returning a pointer to local memory.
 Most of the time this falls under the desire to return a scratch array
 used to transform an argument:
 
+```c
     #include <stdio.h>
     #include <string.h>
-    
+
     char *reverse ( const char *s )
     {
       char save[1024];
       int i = 0, j = strlen ( s );
-    
+
       while ( j > 0 )
         save[i++] = s[--j];
       save[i] = '\0';
-    
+
       return save; /* Wrong! */
     }
-    
+
     int main ( void )
     {
       char *p = reverse ( "J. Random Guy" );
-    
+
       puts ( p );
-    
+
       return 0;
     }
+```
 
 While this code will compile and run, the most likely output will be
 garbage characters. Why? Because **p** points to memory that was local
@@ -1164,29 +1248,31 @@ ended when **reverse** ended, this is a quick fix since it only requires
 that the keyword **static** be prepended to the declaration of the local
 array:
 
+```c
     #include <stdio.h>
     #include <string.h>
-    
+
     char *reverse ( const char *s )
     {
       static char save[1024];
       int i = 0, j = strlen ( s );
-    
+
       while ( j > 0 )
         save[i++] = s[--j];
       save[i] = '\0';
-    
+
       return save; /* Safe now */
     }
-    
+
     int main ( void )
     {
       char *p = reverse ( "J. Random Guy" );
-    
+
       puts ( p );
-    
+
       return 0;
     }
+```
 
 Unfortunately, static local variables are more trouble than they are
 worth. First, this new **reverse** function will not play well in a
@@ -1197,16 +1283,18 @@ be immediately used and then forgotten, or immediately copied. Otherwise
 a future call to **reverse** will overwrite the contents of the array,
 and the result of the last call will be lost:
 
+```c
     int main ( void )
     {
       char *p;
-    
+
       p = reverse ( "J. Random Guy" );
       reverse ( "This is a test" );
       puts ( p );
-    
+
       return 0;
     }
+```
 
 The result will be, unintuitively, “tset a si sihT”, because the second
 call to **reverse** caused the static array to be overwritten with the
@@ -1217,56 +1305,60 @@ calling function to supply a buffer. Naturally, this requires another
 argument to the function, and the calling function can then create a
 local array to pass to it:
 
+```c
     #include <stdio.h>
     #include <string.h>
-    
+
     void reverse ( const char *s, char buffer[] )
     {
       int i = 0, j = strlen ( s );
-    
+
       while ( j > 0 )
         buffer[i++] = s[--j];
       buffer[i] = '\0';
     }
-    
+
     int main ( void )
     {
       char buffer[1024];
-    
+
       reverse ( "J. Random Guy", buffer );
       puts ( buffer );
-    
+
       return 0;
     }
+```
 
 Using a buffer argument and returning a pointer to that buffer can be a
 powerful combination:
 
+```c
     #include <stdio.h>
     #include <string.h>
-    
+
     char *reverse ( const char *s, char buffer[] )
     {
       int i = 0, j = strlen ( s );
-    
+
       while ( j > 0 )
         buffer[i++] = s[--j];
       buffer[i] = '\0';
-      
+
       return buffer;
     }
-    
+
     int main ( void )
     {
       char buffer[1024];
       char *p;
-    
+
       p = reverse ( "J. Random Guy", buffer );
       puts ( buffer );
       puts ( p );
-    
+
       return 0;
     }
+```
 
 The third common solution to the original problem is to dynamically
 allocate memory inside **reverse**, and then return a pointer to that
@@ -1274,35 +1366,37 @@ memory. Because dynamic memory has a lifetime of from when it is
 explicitly allocated to when it is explicitly freed, it will exist until
 the calling function calls **free** on the pointer:
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
-    
+
     char *reverse ( const char *s )
     {
       int i = 0, j = strlen ( s );
       char *save = malloc ( j + 1 );
-    
+
       if ( save == NULL )
         return NULL;
-    
+
       while ( j > 0 )
         save[i++] = s[--j];
       save[i] = '\0';
-      
+
       return save;
     }
-    
+
     int main ( void )
     {
       char *p;
-    
+
       p = reverse ( "J. Random Guy" );
       puts ( p );
       free ( p );
-    
+
       return 0;
     }
+```
 
 The problem with this solution is that it requires the calling function
 to remember to free the memory. Unless the calling function explicitly
@@ -1320,31 +1414,33 @@ useful, while pointers to the first element of an array work just fine
 and are easier to get right. Consider the **reverse** function, except
 this time returning a pointer to an array:
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
-    
+
     char (*reverse ( const char *s ))[100]
     {
       int i = 0, j = strlen ( s );
       static char save[100];
-    
+
       while ( j > 0 )
         save[i++] = s[--j];
       save[i] = '\0';
-      
+
       return &save;
     }
-    
+
     int main ( void )
     {
       char (*p)[100];
-    
+
       p = reverse ( "J. Random Guy" );
       puts ( *p );
-    
+
       return 0;
     }
+```
 
 #### Pointers as arrays
 
@@ -1376,21 +1472,23 @@ considerably smaller than an array. A common mistake is when new
 programmers do not realize that an array argument is actually value
 context, and try to use **sizeof** from within a function:
 
+```c
     #include <stdio.h>
-    
+
     void f ( int a[] )
     {
       printf ( "%zd\n", sizeof a );
     }
-    
+
     int main ( void )
     {
       int a[10];
-    
+
       f ( a );
-    
+
       return 0;
     }
+```
 
 If the size of int is 4 and the size of a pointer to int is 4, this
 program will print 4 instead of the expected 40. That is because an
@@ -1398,15 +1496,19 @@ array argument is actually value context, and the array is converted to
 a pointer to the first element. For that reason, these two function
 declarations are equivalent:
 
+```c
     void f ( int a[] ); /* a is a pointer! */
     void g ( int *a );  /* a is a pointer */
+```
 
 Note that the **%zd** type specifier for printing **size\_t** values may
 not be supported in compilers that do not conform to the C99 standard.
 To avoid undefined behavior for such compilers, the result of **sizeof**
 must be cast to the largest unsigned integral type:
 
+```c
     printf ( "%lu\n", (unsigned long)sizeof a );
+```
 
 2\) As the operand to the address-of operator
 
@@ -1420,11 +1522,15 @@ All other uses of an array are in value context, and are subject to
 conversion to a pointer to the first element. That is why, when pointing
 a pointer to the first element of an array, you can do this:
 
+```c
     int *p = a;
+```
 
 Instead of being forced to do this:
 
+```c
     int *p = &a[0];
+```
 
 It is also why arrays appear to follow pass-by-reference semantics. In
 reality, they follow pass-by-pointer semantics and the pointer is passed
@@ -1440,29 +1546,33 @@ concrete example of the concept of an iterator. Through pointer
 arithmetic, a pointer can walk across every element of an array with
 ease. Here is an example of the standard C function, **strcpy**:
 
+```c
     char *jsw_strcpy ( char *dst, const char *src )
     {
       char *p = dst;
-    
+
       while ( *src != '\0' )
         *p++ = *src++;
       *p = '\0';
-    
+
       return dst;
     }
+```
 
 Compare that to the index-based version:
 
+```c
     char *jsw_strcpy ( char *dst, const char *src )
     {
       int i = 0, j = 0;
-    
+
       while ( src[j] != '\0' )
         dst[i++] = src[j++];
       dst[i] = '\0';
-    
+
       return dst;
     }
+```
 
 The usual argument in favor of the pointer version is speed. Many claims
 that pointers are faster than array indexing are false (the effort
@@ -1487,25 +1597,27 @@ pointer arithmetic using an offset. Why? Because array subscripting is
 in value context, of course\! In the following program I use both array
 subscripting and the internal equivalent of array subscripting:
 
+```c
     #include <stdio.h>
-    
+
     int main ( void )
     {
       char a[] = "This is a test";
       int i;
-    
+
       /* Using array subscripting */
       for ( i = 0; a[i] != '\0'; i++ )
         printf ( "%c", a[i] );
       printf ( "\n" );
-    
+
       /* Using a pointer offset */
       for ( i = 0; *(a + i) != '\0'; i++ )
         printf ( "%c", *(a + i) );
       printf ( "\n" );
-    
+
       return 0;
     }
+```
 
 From this example, it is safe to conclude that **a\[i\]** is actually
 converted by the compiler to the equivalent of **\*(a + i)**. With this
@@ -1513,34 +1625,36 @@ in mind, it is easy to see how a block of dynamic memory can be
 allocated to a pointer and then treated like an array, even with the
 subscript operator\!
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
-    
+
     int main ( void )
     {
       char *p = malloc ( sizeof "This is a test" );
       int i;
-    
+
       if ( p == NULL )
         return EXIT_FAILURE;
-    
+
       strcpy ( p, "This is a test" );
-    
+
       /* Using array subscripting */
       for ( i = 0; p[i] != '\0'; i++ )
         printf ( "%c", p[i] );
       printf ( "\n" );
-    
+
       /* Using a pointer offset */
       for ( i = 0; *(p + i) != '\0'; i++ )
         printf ( "%c", *(p + i) );
       printf ( "\n" );
-    
+
       free ( p );
-    
+
       return EXIT_SUCCESS;
     }
+```
 
 This program will produce exactly the same output, even though instead
 of an array, we are now using a pointer to dynamic memory. Notice the
@@ -1559,27 +1673,29 @@ bytes instead of **10 \* sizeof ( int )** bytes, unless you tell it to.
 No size calculation is needed for dynamic arrays of **char** because
 char is always 1:
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
-    
+
     int main ( void )
     {
       int *p = malloc ( 10 * sizeof *p );
       int i;
-    
+
       if ( p == NULL )
         return EXIT_FAILURE;
-    
+
       for ( i = 0; i < 10; i++ )
         p[i] = 10 * i;
-    
+
       for ( i = 0; i < 10; i++ )
         printf ( "%d\n", p[i] );
-    
+
       free ( p );
-    
+
       return EXIT_SUCCESS;
     }
+```
 
 Take note that **sizeof \*p** is used to get the size of an **int**.
 This seems like it is trying to dereference an uninitialized pointer,
@@ -1590,26 +1706,30 @@ allocating memory is the recommended method over the more obvious, but
 harder to maintain if types change, method used by older books and
 certain stubborn programmers:
 
+```c
     int *p = malloc ( 10 * sizeof ( int ) );
+```
 
 In C++, this is all even easier. Using the **new\[\]** operator, you can
 allocate enough memory for N objects and the compiler will handle the
 size calculation for you:
 
+```c
     #include <iostream>
-    
+
     int main()
     {
       int *p = new int[10];
-    
+
       for ( int i = 0; i < 10; i++ )
         p[i] = 10 * i;
-    
+
       for ( int i = 0; i < 10; i++ )
         std::cout<< p[i] <<'\n';
-    
+
       delete [] p;
     }
+```
 
 In all cases, you must be careful to remember to free the memory that
 you have allocated. This is done with the **free** function in C, and
@@ -1626,7 +1746,9 @@ you do not care about using the subscript operator for multi-dimensional
 arrays, memory allocation is a simple matter of tallying up the sizes of
 each dimension and the type size:
 
+```c
     int *p = malloc ( 2 * 3 * sizeof *p ); /* 2x3 array */
+```
 
 However, at this point, any indexing must be done manually, and the
 expression to index an array allocated in this way with separate indices
@@ -1648,43 +1770,47 @@ memory for an array of pointers, then allocate memory for an array of T
 to each of those pointers. Naturally, this will require a pointer to a
 pointer and M + 1 requests for memory with an MxN array:
 
+```c
     T **p = malloc ( M * sizeof *p );
-    
+
     for ( int i = 0; i < M; i++ )
       p[i] = malloc ( N * sizeof *p[i] );
+```
 
 Because the subscript expression works for this layout, the subscript
 operator will also work:
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
-    
+
     int main ( void )
     {
       int **p;
       int i, j;
-    
+
       /* Error handing removed for simplicity */
       p = malloc ( 2 * sizeof *p );
-    
+
       for ( i = 0; i < 2; i++ )
         p[i] = malloc ( 3 * sizeof *p[i] );
-    
+
       /* Initialize using pointer notation */
       for ( i = 0; i < 2; i++ ) {
         for ( j = 0; j < 3; j++ )
           *( *( p + i ) + j ) = i * j;
       }
-    
+
       /* Test with subscript notation */
       for ( i = 0; i < 2; i++ ) {
         for ( j = 0; j < 3; j++ )
           printf ( "%d ", p[i][j] );
         printf ( "\n" );
       }
-    
+
       return 0;
     }
+```
 
 The biggest problem with this solution is that each array is not
 required to be contiguous in memory. Arrays have this guarantee, but
@@ -1694,37 +1820,39 @@ array. The next solution fixes this by allocating one big block, as we
 did for manual indexing, and then allocates another array of pointers to
 point into the block at regular intervals:
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
-    
+
     int main ( void )
     {
       int *base;
       int **p;
       int i, j;
-    
+
       /* Error handing removed for simplicity */
       base = malloc ( 2 * 3 * sizeof *base );
       p = malloc ( 2 * sizeof *p );
-    
+
       for ( i = 0; i < 2; i++ )
         p[i] = &base[i * 3];
-    
+
       /* Initialize using pointer notation */
       for ( i = 0; i < 2; i++ ) {
         for ( j = 0; j < 3; j++ )
           *( *( p + i ) + j ) = i * j;
       }
-    
+
       /* Test with subscript notation */
       for ( i = 0; i < 2; i++ ) {
         for ( j = 0; j < 3; j++ )
           printf ( "%d ", p[i][j] );
         printf ( "\n" );
       }
-    
+
       return 0;
     }
+```
 
 The only change made was to add the base pointer, which points to the
 big block, and the allocation step. The biggest problem with this
@@ -1741,10 +1869,12 @@ search trees. This is done by creating what is called a
 “self-referential structure”, where a user-defined type has a pointer
 to itself:
 
+```c
     struct jsw_node {
       int data;
       struct jsw_node *next;
     };
+```
 
 While a structure cannot contain an instance of itself, because the
 declaration would be infinitely recursive, it can contain a pointer to
@@ -1754,14 +1884,15 @@ instance. By creating multiple instances of the structure, and linking
 them together by assigning the address of one to the pointer of another,
 you can chain together wholely unique objects into a list:
 
+```c
     #include <stddef.h>
     #include <stdio.h>
-    
+
     struct jsw_node {
       int data;
       struct jsw_node *next;
     };
-    
+
     int main ( void )
     {
       struct jsw_node objects[] = {
@@ -1773,21 +1904,22 @@ you can chain together wholely unique objects into a list:
       };
       struct jsw_node *start = objects;
       int i;
-    
+
       for ( i = 1; i < 5; i++ ) {
         start->next = &objects[i];
         start = start->next;
       }
-    
+
       start = objects;
-    
+
       while ( start != NULL ) {
         printf ( "%d\n", start->data );
         start = start->next;
       }
-    
+
       return 0;
     }
+```
 
 Of course, if you already have an array of the objects, there's really
 no point to all of this because there are simpler ways to simulate a
@@ -1797,40 +1929,42 @@ time, and you do not know how many there will be. Coupled with dynamic
 memory for adding or removing a structure on demade, a linked data
 structure can be incredibly powerful:
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
-    
+
     struct jsw_node {
       int data;
       struct jsw_node *next;
     };
-    
+
     int main ( void )
     {
       struct jsw_node *start = NULL;
       struct jsw_node *p;
       int i;
-    
+
       while ( scanf ( "%d", &i ) == 1 ) {
         p = malloc ( sizeof *p );
-    
+
         if ( p == NULL )
           break;
-    
+
         p->data = i;
         p->next = start;
         start = p;
       }
-    
+
       while ( start != NULL ) {
         printf ( "%d\n", start->data );
         p = start;
         start = start->next;
         free ( p );
       }
-    
+
       return 0;
     }
+```
 
 Since this tutorial is already too long, and it is about pointers, not
 linked data structures, I will not go into the details of linked lists.
@@ -1862,21 +1996,22 @@ function without penalty and without cluttering up the code with the
 syntax of a pointer. The pointer example from earlier can be rewritten
 using a reference in C++:
 
+```c
     #include <iostream>
-    
+
     struct s {
       char name[256];
       char address[1024];
       char phone[20];
     };
-    
+
     void f ( const s& arg )
     {
       std::cout<< arg.name <<'\n'
         << arg.address <<'\n'
         << arg.phone <<'\n';
     }
-    
+
     int main ( void )
     {
       s arg = {
@@ -1884,9 +2019,10 @@ using a reference in C++:
         "123 Nowhere Lane, Some Place, Some Country",
         "1-111-111-1111",
       };
-    
+
       f ( arg );
     }
+```
 
 As with pointers, const-correctness applies when the object will not be
 modified. There is one major difference between pointers and references
@@ -1894,51 +2030,55 @@ in this case; while a pointer to const must still point to an object
 with an address, a const reference does not need to refer to an object
 with an address and actually can refer to a value\!
 
+```c
     #include <iostream>
-    
+
     void f ( const int& arg )
     {
       std::cout<< arg <<'\n';
     }
-    
+
     int main ( void )
     {
       f ( 123 );
     }
+```
 
 By returning a reference, two nifty tricks are allowed. First, you can
 return a reference and chain calls of a function together as long as
 they take that reference as an argument:
 
+```c
     #include <iostream>
-    
+
     int& f ( int& arg )
     {
       std::cout<< arg++ <<' ';
-    
+
       return arg;
     }
-    
+
     struct s {
       int i;
-    
+
       s& g ( s& arg )
       {
         f ( i );
         return *this;
       }
     };
-    
+
     int main ( void )
     {
       int i = 0;
       s t = {0};
-    
+
       f ( f ( f ( f ( i ) ) ) );
       std::cout<<'\n';
       t.g ( t ).g ( t ).g ( t ).g ( t );
       std::cout<<'\n';
     }
+```
 
 To do the same thing with pointers would be incredibly awkward. This is
 how a lot of the overloaded operators in the standard iostreams library
@@ -1948,8 +2088,9 @@ Second, you can return a reference through a function call and assign to
 the object that the reference refers to. This is the technique used by
 objects that can pretend to be arrays and support subscripting:
 
+```c
     #include <iostream>
-    
+
     class array {
       int base[5];
     public:
@@ -1958,17 +2099,18 @@ objects that can pretend to be arrays and support subscripting:
         return base[i];
       }
     };
-    
+
     int main ( void )
     {
       array a;
-    
+
       for ( int i = 0; i < 5; i++ )
         a[i] = 10 * i;
-    
+
       for ( int i = 0; i < 5; i++ )
         std::cout<< a[i] <<'\n';
     }
+```
 
 #### References and pointers
 

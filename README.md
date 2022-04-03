@@ -1,3 +1,4 @@
+
 This repository contains some useful public-domain libraries by
 Julienne Walker, which I rescued from her now-defunct site
 [eternallyconfuzzled.com][1].
@@ -19,22 +20,22 @@ as well.
 
 | Tutorial                           | Library                      |
 | ---------------------------------- | ---------------------------- |
-| [Andersson Trees][dst-andersson]   | [jsw\_atree](jsw\_atree)     |
-| [AVL Trees][dst-avl]               | [jsw\_avltree](jsw\_avltree) |
+| [Andersson Trees][dst-andersson]   | [jsw\_atree](imp-atree)     |
+| [AVL Trees][dst-avl]               | [jsw\_avltree](imp-avltree) |
 | [Basic Tries][dst-trie1]           |                              |
 | [Binary Search Trees I][dst-bst1]  |                              |
 | [Binary Search Trees II][dst-bst2] |                              |
-| [Hash Tables][dst-hashtable]       | [jsw\_hlib](jsw\_hlib)       |
+| [Hash Tables][dst-hashtable]       | [jsw\_hlib](imp-hlib)       |
 | [Linked Lists][dst-linklist]       |                              |
-| [Red Black Trees][dst-rbtree]      | [jsw\_rbtree](jsw\_rbtree)   |
-| [Skip Lists][dst-skip]             | [jsw\_slib](jsw\_slib)       |
+| [Red Black Trees][dst-rbtree]      | [jsw\_rbtree](imp-rbtree)   |
+| [Skip Lists][dst-skip]             | [jsw\_slib](imp-slib)       |
 
 ### Algorithms
 
 | Tutorial                           | Library                      |
 | ---------------------------------- | ---------------------------- |
 | [Hashing][alg-hashing]             |                              |
-| [Random Numbers][alg-rand]         | [jsw\_rand](jsw\_rand)       |
+| [Random Numbers][alg-rand]         | [jsw\_rand](imp-rand)       |
 | [Sorting][alg-sorting]             |                              |
 
 ### Miscellaneous
@@ -58,6 +59,7 @@ the public domain, as stated [here][1].  (Despite the contradictory
 [2]: https://en.wikipedia.org/wiki/Wayback_Machine
 [3]: https://github.github.com/gfm/
 [4]: https://pandoc.org/
+[5]: https://github.com/ppelleti/jsw-libs
 
 [dst-avl]: Tutorials/jsw_tut_avl.md
 [dst-andersson]: Tutorials/jsw_tut_andersson.md
@@ -76,3 +78,9 @@ the public domain, as stated [here][1].  (Despite the contradictory
 [art-bigo]: Articles/jsw_art_bigo.md
 [art-rand]: Articles/jsw_art_rand.md
 [art-atoi]: Articles/jsw_art_atoi.md
+[imp-atree]: Implementations/jsw_atree
+[imp-avltree]: Implementations/jsw_avltree
+[imp-hlib]: Implementations/jsw_hlib
+[imp-rand]: Implementations/jsw_rand
+[imp-rbtree]: Implementations/jsw_rbtree
+[imp-slib]: Implementations/jsw_slib

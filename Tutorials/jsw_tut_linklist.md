@@ -1,6 +1,6 @@
 # Linked Lists
 
-  
+
 
 I'm constantly dismayed at the tutorials and descriptions of linked
 lists that I find online, but I can let that slide because there's no
@@ -48,7 +48,7 @@ on how the nodes are linked together. If 4 linked to 3 and 1 linked to
 2, it might look something like this without changing the order of
 display:
 
-``` 
+```
          +-------+
          |       |
 +-> 3 -> 1   4   +-> 2 -> 5 -> ~
@@ -80,16 +80,18 @@ node is simple and efficient if you have immediate access to that node,
 getting to the node can be an issue. For example, in an array, you can
 use an index and get right to the item with a simple jump:
 
+```c
     #include <stdio.h>
-    
+
     int main()
     {
         int a[] = { 1, 2, 3, 4, 5 };
-    
+
         printf("%d\n", a[3]);
-    
+
         return 0;
     }
+```
 
 This code will print 4, but if the same numbers were stored in a linked
 list, you would have to follow the links from 1 to get to 4 before being
@@ -99,16 +101,18 @@ reference to. Usually the only guaranteed reference is the first node in
 the list, so printing the 3rd index of a linked list would look more
 like this:
 
+```c
     node it = first_node;
     size_t i = 0;
-    
+
     while (i != 3)
     {
         it = next_node(it);
         ++i;
     }
-    
+
     printf("%d\n", node_data(it);
+```
 
 The exact details of the linked list code will be covered shortly, so
 I've kept the snippet to a minimum and used as little specifics as
@@ -142,18 +146,20 @@ list. Other members could also be added for more list-specific
 information, such as a flag specifying whether the list has a dummy head
 or not (see Insertion and Deletion).
 
+```c
     struct jsw_node
     {
         void *data;
         struct jsw_node *next;
     };
-    
+
     struct jsw_list
     {
         struct jsw_node *head;
         int has_dummy_head;
         size_t size;
     };
+```
 
 However, this isn't the only way to create a linked list, and this
 tutorial will cover some other methods. A few helper functions are in
@@ -161,6 +167,7 @@ order as well, because common operations like creating and destroying
 nodes and lists would bulk up the list algorithms. So we'll just toss
 them into functions to reduce redundancy.
 
+```c
     /*
         Create a new node with the given data and links
         Returns a pointer to the new node, or NULL on error
@@ -168,16 +175,16 @@ them into functions to reduce redundancy.
     struct jsw_node *new_node(void *data, struct jsw_node *next)
     {
         struct jsw_node *rv = malloc(sizeof *rv);
-    
+
         if (rv != NULL)
         {
             rv->data = data;
             rv->next = next;
         }
-    
+
         return rv;
     }
-    
+
     /*
         Create a new list with an optional dummy head
         Returns a pointer to the new list, or NULL on error
@@ -185,13 +192,13 @@ them into functions to reduce redundancy.
     struct jsw_list *new_list(int has_dummy_head)
     {
         struct jsw_list *rv = malloc(sizeof *rv);
-    
+
         if (rv != NULL)
         {
             rv->head = has_dummy_head ? new_node(NULL, NULL) : NULL;
             rv->has_dummy_head = has_dummy_head;
             rv->size = 0;
-    
+
             if (has_dummy_head && rv->head == NULL)
             {
                 /* Release the list if a dummy couldn't be allocated */
@@ -199,10 +206,10 @@ them into functions to reduce redundancy.
                 rv = NULL;
             }
         }
-    
+
         return rv;
     }
-    
+
     /*
         Destroy a single given node, assuming it has been unlinked
         Optionally destroy the data contained in the node
@@ -211,7 +218,7 @@ them into functions to reduce redundancy.
     struct jsw_node *destroy_node(struct jsw_node *node, void (destroy_data)(void*))
     {
         struct jsw_node *rv = NULL;
-    
+
         if (node != NULL)
         {
             /*
@@ -219,18 +226,18 @@ them into functions to reduce redundancy.
             because we're about to destroy this one
             */
             rv = node->next;
-    
+
             if (destroy_data != NULL)
             {
                 destroy_data(node->data);
             }
-    
+
             free(node);
         }
-    
+
         return rv;
     }
-    
+
     /*
         Destroy all nodes in a given list
         Optionally destroy all data in each node
@@ -242,6 +249,7 @@ them into functions to reduce redundancy.
             list->head = destroy_node(list->head, destroy_data);
         }
     }
+```
 
 We'll be assuming changes to these helpers later when we start to look
 at different variations of the linked list, but the changes are trivial
@@ -261,7 +269,7 @@ should be set to the previous node's link, and the previous node's link
 should be set to the new node. Graphically the entire operation looks
 like this:
 
-``` 
+```
           3 -> ~
 
 1 -> 2 ------> 4 -> 5 -> ~
@@ -287,6 +295,7 @@ between 2 and 4. Keep in mind that 2's link cannot be reset to point to
 and you wouldn't know what to set 3's link to. Order of operations is
 very important here. The code to perform this magic is extremely simple:
 
+```c
     /*
         Insert a new node after the given node
         Returns a pointer to the new node or NULL on failure
@@ -294,21 +303,22 @@ very important here. The code to perform this magic is extremely simple:
     struct jsw_node *insert_after(struct jsw_list *list, struct jsw_node *pos, void *data)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (list != NULL && pos != NULL)
         {
             /* Create a new node and set the next link */
             rv = new_node(data, pos->next);
-    
+
             if (rv != NULL)
             {
                 pos->next = rv;
                 ++list->size;
             }
         }
-    
+
         return rv;
     }
+```
 
 There are a few problems by design in this function. The first problem
 is that if the list is empty, there's nothing to insert after. In such a
@@ -374,6 +384,7 @@ jsw\_node pointer called tail to the jsw\_list structure as well as a
 flag, has\_dummy\_tail. This requires changes to new\_list so that the
 tail can be created properly:
 
+```c
     /*
         Create a new list with an optional dummy head and tail
         Returns a pointer to the new list, or NULL on error
@@ -381,11 +392,11 @@ tail can be created properly:
     struct jsw_list *new_list(int has_dummy_head, int has_dummy_tail)
     {
         struct jsw_list *rv = malloc(sizeof *rv);
-    
+
         if (rv != NULL)
         {
             struct jsw_node *tail = has_dummy_tail ? new_node(NULL, NULL) : NULL;
-    
+
             if (has_dummy_tail && tail == NULL)
             {
                 /* Release the list if a dummy couldn't be allocated */
@@ -396,12 +407,12 @@ tail can be created properly:
             {
                 rv->head = has_dummy_head ? new_node(NULL, tail) : NULL;
                 rv->tail = tail;
-    
+
                 rv->has_dummy_head = has_dummy_head;
                 rv->has_dummy_tail = has_dummy_tail;
-    
+
                 rv->size = 0;
-    
+
                 if (has_dummy_head && rv->head == NULL)
                 {
                     /* Release the list if a dummy couldn't be allocated */
@@ -410,9 +421,10 @@ tail can be created properly:
                 }
             }
         }
-    
+
         return rv;
     }
+```
 
 The changes are straightforward, but take note that other insertion and
 deletion algorithms need changes as well. Another problem with
@@ -429,6 +441,7 @@ simplest solution is for insert\_after to call insert\_before when pos
 is the dummy tail, and insert before to call insert\_after when pos is
 the dummy head:
 
+```c
     /*
         Insert a new node after the given node
         Returns a pointer to the new node or NULL on failure
@@ -436,14 +449,14 @@ the dummy head:
     struct jsw_node *insert_after(struct jsw_list *list, struct jsw_node *pos, void *data)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (list != NULL && pos != NULL)
         {
             if (pos != list->tail)
             {
                 /* Create a new node and set the next link */
                 rv = new_node(data, pos->next);
-    
+
                 if (rv != NULL)
                 {
                     pos->next = rv;
@@ -455,10 +468,10 @@ the dummy head:
                 rv = insert_before(list, pos, data);
             }
         }
-    
+
         return rv;
     }
-    
+
     /*
         Insert a new node before the given node
         Returns a pointer to the new node or NULL on failure
@@ -466,22 +479,22 @@ the dummy head:
     struct jsw_node *insert_before(struct jsw_list *list, struct jsw_node *pos, void *data)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (list != NULL && pos != NULL)
         {
             if (pos != list->head)
             {
                 /* Find the previous node */
                 struct jsw_node *it = list->head;
-    
+
                 while (it->next != pos)
                 {
                     it = it->next;
                 }
-    
+
                 /* Create a new node and set the next link */
                 rv = new_node(data, it->next);
-    
+
                 if (rv != NULL)
                 {
                     it->next = rv;
@@ -493,9 +506,10 @@ the dummy head:
                 rv = insert_after(list, pos, data);
             }
         }
-    
+
         return rv;
     }
+```
 
 The insert\_before function is largely the inverse of insert after, but
 I'd like to draw your attention to the while loop in insert\_before.
@@ -513,15 +527,15 @@ deleted unless it's being added to another list. Here's the graphical
 representation of deleting a node in a linked list:
 
     1 -> 2 -> 3 -> 4 -> 5 -> ~
-    
-    
+
+
               3
               |
     1 -> 2 ---+--> 4 -> 5 -> ~
-    
-    
+
+
               3 -> ~
-    
+
     1 -> 2 ------> 4 -> 5 -> ~
 
 I've added the update of 3's link to null so that the removal is more
@@ -536,6 +550,7 @@ should probably remove the first node in the list for the same reason.
 Finally, we need to account for an empty list. Have a look at the code,
 and I'll explain the decisions behind it afterward.
 
+```c
     /*
         Remove the selected node
         Returns the removed node or NULL on failure
@@ -543,25 +558,25 @@ and I'll explain the decisions behind it afterward.
     struct jsw_node *remove_node(struct jsw_list *list, struct jsw_node *pos)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (list != NULL && pos != NULL)
         {
             struct jsw_node *it = list->head;
             struct jsw_node *prev = NULL;
-    
+
             /* Shift the head by one if removing the dummy */
             if (pos == list->head)
             {
                 pos = pos->next;
             }
-    
+
             /* Find the previous node and its previous node */
             while (it->next != pos)
             {
                 prev = it;
                 it = it->next;
             }
-    
+
             if (pos != list->tail)
             {
                 /* Remove the selected node */
@@ -583,9 +598,10 @@ and I'll explain the decisions behind it afterward.
                 /* The list was empty */
             }
         }
-    
+
         return rv;
     }
+```
 
 The first decision is how to handle the case where pos is the dummy head
 of the list. This turns out to be a relatively simple problem because we
@@ -643,6 +659,7 @@ the head and tail. This involves making sure that the next link of the
 head points to the tail and the prev link of the tail points to the
 head.
 
+```c
     /*
         Create a new list with an optional dummy head and tail
         Returns a pointer to the new list, or NULL on error
@@ -650,11 +667,11 @@ head.
     struct jsw_list *new_list(int has_dummy_head, int has_dummy_tail)
     {
         struct jsw_list *rv = malloc(sizeof *rv);
-    
+
         if (rv != NULL)
         {
             struct jsw_node *tail = has_dummy_tail ? new_node(NULL, NULL, NULL) : NULL;
-    
+
             if (has_dummy_tail && tail == NULL)
             {
                 /* Release the list if a dummy couldn't be allocated */
@@ -664,16 +681,16 @@ head.
             else
             {
                 rv->head = has_dummy_head ? new_node(NULL, NULL, tail) : NULL;
-    
+
                 /* Finish linking the tail to the head */
                 rv->tail = tail;
                 rv->tail->prev = rv->head;
-    
+
                 rv->has_dummy_head = has_dummy_head;
                 rv->has_dummy_tail = has_dummy_tail;
-    
+
                 rv->size = 0;
-    
+
                 if (has_dummy_head && rv->head == NULL)
                 {
                     /* Release the list if a dummy couldn't be allocated */
@@ -682,9 +699,10 @@ head.
                 }
             }
         }
-    
+
         return rv;
     }
+```
 
 The prev link of the tail relies on the head already existing in a
 non-null state, which isn't the case. So the code is a little awkward in
@@ -700,6 +718,7 @@ the list. However, both need to take care to set all of the links (there
 are up to four that need to be set) without accidentally dereferencing a
 null pointer. The changes are shockingly simple:
 
+```c
     /*
         Insert a new node after the given node
         Returns a pointer to the new node or NULL on failure
@@ -707,21 +726,21 @@ null pointer. The changes are shockingly simple:
     struct jsw_node *insert_after(struct jsw_list *list, struct jsw_node *pos, void *data)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (list != NULL && pos != NULL)
         {
             if (pos != list->tail)
             {
                 /* Create a new node and set the next link */
                 rv = new_node(data, pos, pos->next);
-    
+
                 if (rv != NULL)
                 {
                     if (pos->next != NULL)
                     {
                         pos->next->prev = rv;
                     }
-    
+
                     pos->next = rv;
                     ++list->size;
                 }
@@ -731,10 +750,10 @@ null pointer. The changes are shockingly simple:
                 rv = insert_before(list, pos, data);
             }
         }
-    
+
         return rv;
     }
-    
+
     /*
         Insert a new node before the given node
         Returns a pointer to the new node or NULL on failure
@@ -742,21 +761,21 @@ null pointer. The changes are shockingly simple:
     struct jsw_node *insert_before(struct jsw_list *list, struct jsw_node *pos, void *data)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (list != NULL && pos != NULL)
         {
             if (pos != list->head)
             {
                 /* Create a new node and set the next link */
                 rv = new_node(data, pos->prev, pos);
-    
+
                 if (rv != NULL)
                 {
                     if (pos->prev != NULL)
                     {
                         pos->prev->next = rv;
                     }
-    
+
                     pos->prev = rv;
                     ++list->size;
                 }
@@ -766,9 +785,10 @@ null pointer. The changes are shockingly simple:
                 rv = insert_after(list, pos, data);
             }
         }
-    
+
         return rv;
     }
+```
 
 Finally, deletion becomes an exercise in the trivial. Now that we can
 access both sides from any node, we no longer need to do the awkward
@@ -776,6 +796,7 @@ search that was necessary before. The majority of the code consists of
 dealing with pos being either the dummy head or tail, and making sure
 that the two remaining links in the list are properly set:
 
+```c
     /*
         Remove the selected node
         Returns the removed node or NULL on failure
@@ -783,7 +804,7 @@ that the two remaining links in the list are properly set:
     struct jsw_node *remove_node(struct jsw_list *list, struct jsw_node *pos)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (list != NULL && pos != NULL)
         {
             /* Shift off of the dummies */
@@ -791,36 +812,37 @@ that the two remaining links in the list are properly set:
             {
                 pos = pos->next;
             }
-    
+
             if (pos == list->tail)
             {
                 pos = pos->prev;
             }
-    
+
             if (pos != list->head)
             {
                 /* Remove a non-dummy node */
                 rv = pos;
-    
+
                 /* Reset the list links if necessary */
                 if (rv->prev != NULL)
                 {
                     rv->prev->next = rv->next;
                 }
-    
+
                 if (rv->next != NULL)
                 {
                     rv->next->prev = rv->prev;
                 }
-    
+
                 /* Clean up the old node */
                 rv->prev = rv->next = NULL;
                 --list->size;
             }
         }
-    
+
         return rv;
     }
+```
 
 Notice that removing a non-dummy node only tests for the dummy head.
 While you could add a test for the dummy tail too, it would be
@@ -861,6 +883,7 @@ the updated helper functions to take advantage of circular references
 (the structure is the simple one from the beginning of the tutorial
 without the has\_dummy\_head flag):
 
+```c
     /*
         Create a new list
         Returns a pointer to the new list, or NULL on error
@@ -868,12 +891,12 @@ without the has\_dummy\_head flag):
     struct jsw_list *new_list(void)
     {
         struct jsw_list *rv = malloc(sizeof *rv);
-    
+
         if (rv != NULL)
         {
             rv->head = new_node(NULL, NULL, NULL);
             rv->size = 0;
-    
+
             if (rv->head != NULL)
             {
                 /* Set up a circular reference situation */
@@ -887,10 +910,10 @@ without the has\_dummy\_head flag):
                 rv = NULL;
             }
         }
-    
+
         return rv;
     }
-    
+
     /*
         Destroy all nodes in a given list
         Optionally destroy all data in each node
@@ -903,6 +926,7 @@ without the has\_dummy\_head flag):
             --list->size;
         }
     }
+```
 
 The new\_list function is greatly simplified because there's less work
 to do. As with the tail issue before, we can't set the prev or next
@@ -921,6 +945,7 @@ meltdowns that break just about any program. Let's look at how
 insert\_before, insert\_after, and remove\_node were simplified through
 circular referencing:
 
+```c
     /*
         Insert a new node after the given node
         Returns a pointer to the new node or NULL on failure
@@ -928,12 +953,12 @@ circular referencing:
     struct jsw_node *insert_after(struct jsw_list *list, struct jsw_node *pos, void *data)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (list != NULL && pos != NULL)
         {
             /* Create a new node and set the next link */
             rv = new_node(data, pos, pos->next);
-    
+
             if (rv != NULL)
             {
                 pos->next->prev = rv;
@@ -941,10 +966,10 @@ circular referencing:
                 ++list->size;
             }
         }
-    
+
         return rv;
     }
-    
+
     /*
         Insert a new node before the given node
         Returns a pointer to the new node or NULL on failure
@@ -952,12 +977,12 @@ circular referencing:
     struct jsw_node *insert_before(struct jsw_list *list, struct jsw_node *pos, void *data)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (list != NULL && pos != NULL)
         {
             /* Create a new node and set the next link */
             rv = new_node(data, pos->prev, pos);
-    
+
             if (rv != NULL)
             {
                 pos->prev->next = rv;
@@ -965,10 +990,10 @@ circular referencing:
                 ++list->size;
             }
         }
-    
+
         return rv;
     }
-    
+
     /*
         Remove the selected node
         Returns the removed node or NULL on failure
@@ -976,26 +1001,27 @@ circular referencing:
     struct jsw_node *remove_node(struct jsw_list *list, struct jsw_node *pos)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (list != NULL && pos != NULL)
         {
             if (pos != list->head)
             {
                 /* Remove a non-header node */
                 rv = pos;
-    
+
                 /* Reset the list links if necessary */
                 rv->prev->next = rv->next;
                 rv->next->prev = rv->prev;
-    
+
                 /* Clean up the old node */
                 rv->prev = rv->next = NULL;
                 --list->size;
             }
         }
-    
+
         return rv;
     }
+```
 
 All of those pesky special cases for the end of the list are gone with
 the exception of removing the header node. Now, it's possible to do
@@ -1023,6 +1049,7 @@ an insert\_sorted function that maintains order in the list even when
 new items are being added. This is as simple as finding the sorted
 location of the new item and calling insert\_before to place it:
 
+```c
     /*
         Insert a new node in sorted order
         Returns a pointer to the new node or NULL on failure
@@ -1030,23 +1057,24 @@ location of the new item and calling insert\_before to place it:
     struct jsw_node *insert_sorted(struct jsw_list *list, void *data)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (list != NULL)
         {
             /* Find the sorted position of the new node */
             struct jsw_node *it = list->head->next;
-    
+
             while (it != list->head && compare(it->data, data) < 0)
             {
                 it = it->next;
             }
-    
+
             /* Delegate the insertion to an existing function */
             rv = insert_before(list, it, data);
         }
-    
+
         return rv;
     }
+```
 
 The insert\_sorted function is little more than a wrapper around
 insert\_before that searches for the first node that has a greater or
@@ -1069,6 +1097,7 @@ that it uses insert\_after and the search stops at the node before the
 sorted location. This is because insert\_before would fail miserably
 with a null pointer. :-) With a dummy head, it would look like this:
 
+```c
     /*
         Insert a new node in sorted order
         Returns a pointer to the new node or NULL on failure
@@ -1076,23 +1105,24 @@ with a null pointer. :-) With a dummy head, it would look like this:
     struct jsw_node *insert_sorted(struct jsw_list *list, void *data)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (list != NULL)
         {
             /* Find the sorted position of the new node */
             struct jsw_node *it = list->head;
-    
+
             while (it->next != NULL && compare(it->next->data, data) < 0)
             {
                 it = it->next;
             }
-    
+
             /* Delegate the insertion to an existing function */
             rv = insert_after(list, it, data);
         }
-    
+
         return rv;
     }
+```
 
 Without a dummy head, the function would have no choice but to use a
 special case when the new node is to be inserted onto the front of the
@@ -1100,6 +1130,7 @@ list. While the following function assumes a single linked list, the
 only difference between it and the algorithm for a double linked list is
 the number of parameters to the new\_node function.
 
+```c
     /*
         Insert a new node in sorted order
         Returns a pointer to the new node or NULL on failure
@@ -1107,13 +1138,13 @@ the number of parameters to the new\_node function.
     struct jsw_node *insert_sorted(struct jsw_list *list, void *data)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (list != NULL)
         {
             if (compare(data, list->head->data) < 0)
             {
                 rv = new_node(data, list->head);
-    
+
                 if (rv != NULL)
                 {
                     /* Only reset the head on success */
@@ -1124,19 +1155,20 @@ the number of parameters to the new\_node function.
             {
                 /* Find the sorted position of the new node */
                 struct jsw_node *it = list->head;
-    
+
                 while (it->next != NULL && compare(it->next->data, data) < 0)
                 {
                     it = it->next;
                 }
-    
+
                 /* Delegate the insertion to an existing function */
                 rv = insert_after(list, it, data);
             }
         }
-    
+
         return rv;
     }
+```
 
 In the majority of cases, it's faster and easier to maintain order in a
 linked list than to explicitly sort an unsorted list, but what if you
@@ -1161,13 +1193,14 @@ To do something like this we would need extra links for each node that
 specifies even or odd, and is a null pointer if not set. We would also
 need links to the start of each thread in the main list structure:
 
+```c
     struct jsw_node
     {
         void *data;
         struct jsw_node *next;
         struct jsw_node *link[2];
     };
-    
+
     struct jsw_list
     {
         struct jsw_node *head;
@@ -1175,6 +1208,7 @@ need links to the start of each thread in the main list structure:
         int has_dummy_head;
         size_t size;
     };
+```
 
 The new\_node and new\_list functions would need to be updated as well
 to handle these new links by setting them to null pointers or some other
@@ -1186,6 +1220,7 @@ needed for the threads, with the thread logic being largely unknown to
 the list proper. Here is a create\_threads function that builds the even
 and odd threads:
 
+```c
     /*
         Create the odd/even threads
     */
@@ -1194,28 +1229,29 @@ and odd threads:
         struct jsw_node *it = list->has_dummy_head ? list->head->next : list->head;
         struct jsw_node *link[2] = { 0 };
         int i;
-    
+
         for (i = 1; it != NULL; i++)
         {
             int dir = (i % 2 == 0);
-    
+
             /* Set the start of the thread if necessary */
             if (link[dir] == NULL)
             {
                 list->link[dir] = it;
             }
-    
+
             /* Set the next link in the thread */
             if (link[dir] != NULL)
             {
                 link[dir]->link[dir] = it;
             }
-    
+
             /* Update the walkers */
             link[dir] = it;
             it = it->next;
         }
     }
+```
 
 Now, it might be difficult to see a situation where this kind of
 threading is needed, so let's look at something a bit more practical.
@@ -1233,13 +1269,14 @@ as well as a first thread link in the list structure. Since this example
 will be adding to the end of the threaded list, I've also added a tail
 link for the thread:
 
+```c
     struct jsw_node
     {
         void *data;
         struct jsw_node *next;
         struct jsw_node *next_added;
     };
-    
+
     struct jsw_list
     {
         struct jsw_node *head;
@@ -1248,6 +1285,7 @@ link for the thread:
         int has_dummy_head;
         size_t size;
     };
+```
 
 The list will be built with insert\_sorted, and the thread will handle
 the insertion priority. Be sure to select the thread that will be most
@@ -1260,6 +1298,7 @@ With the structure changes (also the corresponding new\_node and
 new\_list updates), changing insert\_sorted to add newly inserted nodes
 to the thread is bordering on trivial:
 
+```c
     /*
         Insert a new node in sorted order
         Maintains the priority thread
@@ -1268,20 +1307,20 @@ to the thread is bordering on trivial:
     struct jsw_node *insert_sorted(struct jsw_list *list, void *data)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (list != NULL)
         {
             /* Find the sorted position of the new node */
             struct jsw_node *it = list->head;
-    
+
             while (it->next != NULL && compare(it->next->data, data) < 0)
             {
                 it = it->next;
             }
-    
+
             /* Delegate the insertion to an existing function */
             rv = insert_after(list, it, data);
-    
+
             /* Add to the priority thread */
             if (rv != NULL)
             {
@@ -1293,13 +1332,14 @@ to the thread is bordering on trivial:
                 {
                     list->last_added->next_added = rv;
                 }
-    
+
                 list->last_added = rv;
             }
         }
-    
+
         return rv;
     }
+```
 
 The big changes are at the end. Making sure that rv isn't a null pointer
 (which would signal that the node failed to be inserted), the algorithm
@@ -1390,9 +1430,10 @@ let you be the judge. Converting all of the above linked list code so
 that it uses an array instead of dynamic nodes can be done by replacing
 new\_node and destroy\_node:
 
+```c
     static struct jsw_node free_list[MAX_SIZE];
     static size_t next_node = 0;
-    
+
     /*
         Create a new node with the given data and links
         Returns a pointer to the new node, or NULL on error
@@ -1400,17 +1441,17 @@ new\_node and destroy\_node:
     struct jsw_node *new_node(void *data, struct jsw_node *next)
     {
         struct jsw_node *rv = NULL;
-    
+
         if (next_node < MAX_SIZE)
         {
             rv = &free_list[next_node];
             rv->data = data;
             rv->next = next;
         }
-    
+
         return rv;
     }
-    
+
     /*
         Destroy a single given node, assuming it has been unlinked
         Optionally destroy the data contained in the node
@@ -1419,7 +1460,7 @@ new\_node and destroy\_node:
     struct jsw_node *destroy_node(struct jsw_node *node, void (destroy_data)(void*))
     {
         struct jsw_node *rv = node->next;
-    
+
         if (node != NULL)
         {
             if (destroy_data != NULL)
@@ -1427,9 +1468,10 @@ new\_node and destroy\_node:
                 destroy_data(node->data);
             }
         }
-    
+
         return rv;
     }
+```
 
 That's it\! Well, not really. While this works to a point, the
 destruction of a node only destroys the data; it doesn't handle
@@ -1440,8 +1482,9 @@ free list. The only way to avoid invalidating those pointers while still
 being able to return freed nodes to the pool is to search the pool for
 unused pointers.
 
+```c
     static struct jsw_node free_list[MAX_SIZE];
-    
+
     /*
         Create a new node with the given data and links
         Returns a pointer to the new node, or NULL on error
@@ -1450,7 +1493,7 @@ unused pointers.
     {
         struct jsw_node *rv = NULL;
         size_t i;
-    
+
         for (i = 0; i < MAX_SIZE; i++)
         {
             if (!free_list[i].is_used)
@@ -1458,7 +1501,7 @@ unused pointers.
                 break;
             }
         }
-    
+
         if (i != MAX_SIZE)
         {
             rv = &free_list[i];
@@ -1466,10 +1509,10 @@ unused pointers.
             rv->is_used = 1;
             rv->next = next;
         }
-    
+
         return rv;
     }
-    
+
     /*
         Destroy a single given node, assuming it has been unlinked
         Optionally destroy the data contained in the node
@@ -1478,19 +1521,20 @@ unused pointers.
     struct jsw_node *destroy_node(struct jsw_node *node, void (destroy_data)(void*))
     {
         struct jsw_node *rv = node->next;
-    
+
         if (node != NULL)
         {
             if (destroy_data != NULL)
             {
                 destroy_data(node->data);
             }
-    
+
             node->is_used = 0;
         }
-    
+
         return rv;
     }
+```
 
 Notice that I've added a flag to the node struct called is\_used and
 that it's designed so that the default initialization for the static
