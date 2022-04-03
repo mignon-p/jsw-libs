@@ -20,22 +20,22 @@ as well.
 
 | Tutorial                           | Library                      |
 | ---------------------------------- | ---------------------------- |
-| [Andersson Trees][dst-andersson]   | [jsw\_atree](imp-atree)     |
-| [AVL Trees][dst-avl]               | [jsw\_avltree](imp-avltree) |
+| [Andersson Trees][dst-andersson]   | [jsw\_atree][imp-atree]     |
+| [AVL Trees][dst-avl]               | [jsw\_avltree][imp-avltree] |
 | [Basic Tries][dst-trie1]           |                              |
 | [Binary Search Trees I][dst-bst1]  |                              |
 | [Binary Search Trees II][dst-bst2] |                              |
-| [Hash Tables][dst-hashtable]       | [jsw\_hlib](imp-hlib)       |
+| [Hash Tables][dst-hashtable]       | [jsw\_hlib][imp-hlib]       |
 | [Linked Lists][dst-linklist]       |                              |
-| [Red Black Trees][dst-rbtree]      | [jsw\_rbtree](imp-rbtree)   |
-| [Skip Lists][dst-skip]             | [jsw\_slib](imp-slib)       |
+| [Red Black Trees][dst-rbtree]      | [jsw\_rbtree][imp-rbtree]   |
+| [Skip Lists][dst-skip]             | [jsw\_slib][imp-slib]       |
 
 ### Algorithms
 
 | Tutorial                           | Library                      |
 | ---------------------------------- | ---------------------------- |
 | [Hashing][alg-hashing]             |                              |
-| [Random Numbers][alg-rand]         | [jsw\_rand](imp-rand)       |
+| [Random Numbers][alg-rand]         | [jsw\_rand][imp-rand]       |
 | [Sorting][alg-sorting]             |                              |
 
 ### Miscellaneous
