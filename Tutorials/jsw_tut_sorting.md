@@ -697,7 +697,7 @@ This shows the parents and their direct children. You can verify that
 the right children go with the right parents by using the **i \* 2 + 1**
 trick. 41 is index 0, 0 \* 2 + 1 is 1 and 0 \* 2 + 2 is 2. Okay, that's
 an easy one, how about the last parent and child? 69 is index 4, 4 \* 2
-+ 1 is 9, which is the index for 64. So we know that the pattern matches
+\+ 1 is 9, which is the index for 64. So we know that the pattern matches
 what we were doing by finding k with i \* 2 + 1. But since the parent
 index increments by 1 each time and the index of the first child
 increments by 2, we can work directly with the pattern by using two
