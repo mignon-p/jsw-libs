@@ -1,3 +1,4 @@
+
 This repository contains some useful public-domain libraries by
 Julienne Walker, which I rescued from her now-defunct site
 [eternallyconfuzzled.com][1].
@@ -19,22 +20,22 @@ as well.
 
 | Tutorial                           | Library                      |
 | ---------------------------------- | ---------------------------- |
-| [Andersson Trees][dst-andersson]   | [jsw\_atree](jsw\_atree)     |
-| [AVL Trees][dst-avl]               | [jsw\_avltree](jsw\_avltree) |
+| [Andersson Trees][dst-andersson]   | [jsw\_atree][imp-atree]     |
+| [AVL Trees][dst-avl]               | [jsw\_avltree][imp-avltree] |
 | [Basic Tries][dst-trie1]           |                              |
 | [Binary Search Trees I][dst-bst1]  |                              |
 | [Binary Search Trees II][dst-bst2] |                              |
-| [Hash Tables][dst-hashtable]       | [jsw\_hlib](jsw\_hlib)       |
+| [Hash Tables][dst-hashtable]       | [jsw\_hlib][imp-hlib]       |
 | [Linked Lists][dst-linklist]       |                              |
-| [Red Black Trees][dst-rbtree]      | [jsw\_rbtree](jsw\_rbtree)   |
-| [Skip Lists][dst-skip]             | [jsw\_slib](jsw\_slib)       |
+| [Red Black Trees][dst-rbtree]      | [jsw\_rbtree][imp-rbtree]   |
+| [Skip Lists][dst-skip]             | [jsw\_slib][imp-slib]       |
 
 ### Algorithms
 
 | Tutorial                           | Library                      |
 | ---------------------------------- | ---------------------------- |
 | [Hashing][alg-hashing]             |                              |
-| [Random Numbers][alg-rand]         | [jsw\_rand](jsw\_rand)       |
+| [Random Numbers][alg-rand]         | [jsw\_rand][imp-rand]       |
 | [Sorting][alg-sorting]             |                              |
 
 ### Miscellaneous
@@ -83,3 +84,9 @@ to have Perl, gcc, and [valgrind][5] installed to run the tests.
 [art-bigo]: Articles/jsw_art_bigo.md
 [art-rand]: Articles/jsw_art_rand.md
 [art-atoi]: Articles/jsw_art_atoi.md
+[imp-atree]: src/jsw_atree
+[imp-avltree]: src/jsw_avltree
+[imp-hlib]: src/jsw_hlib
+[imp-rand]: src/jsw_rand
+[imp-rbtree]: src/jsw_rbtree
+[imp-slib]: src/jsw_slib

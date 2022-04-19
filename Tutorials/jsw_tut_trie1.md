@@ -1,6 +1,6 @@
 # Basic Tries
 
-  
+
 
 If you're a Jedi, there is no try. But if you're a programmer, trie is
 an option. :) But what exactly is a trie? The name is weird, but it
@@ -20,7 +20,7 @@ an example. Consider a set of strings: {"cat", "can", "cry", "cut",
 "bat", "bool", "batch", "bot", "bath"}. A basic trie of this set would
 look like the following:
 
-``` 
+```
             (root)
           /        \
          c           b
@@ -32,7 +32,7 @@ look like the following:
                 c   h l
                 |
                 h
-    
+
 ```
 
 The idea is that each node in the tree represents a character of a word.
@@ -81,7 +81,7 @@ children, but still says that this node is the end of an item even if
 there are more suffixes for other items. If we mark terminal nodes with
 '\!' then the more accurate trie looks like this:
 
-``` 
+```
               (root)
             /        \
           c             b
@@ -93,7 +93,7 @@ there are more suffixes for other items. If we mark terminal nodes with
                   c   h!  l!
                   |
                   h!
-    
+
 ```
 
 Every leaf node is also a terminal, but the node in question for "bat"
@@ -102,12 +102,13 @@ for ensuring proper operation of the basic trie. Enough yakking though.
 Much of the details will become clear by studying a simple
 implementation. Let's start with the node:
 
+```csharp
     public class TrieNode
     {
         public char Key { get; set; }
         public bool Terminal { get; set; }
         public SortedDictionary<char, TrieNode> Links { get; private set; }
-    
+
         public TrieNode(char key, bool terminal = false)
         {
             Key = key;
@@ -115,6 +116,7 @@ implementation. Let's start with the node:
             Links = new SortedDictionary<char, TrieNode>();
         }
     }
+```
 
 Each node is keyed on a character in the string, so we make sure to
 store that. A boolean flag marking the node as terminal or not is
@@ -137,18 +139,20 @@ is the best starting point in general.
 Of course, a node is useless alone, so we will also create a trie class
 to house it:
 
+```csharp
     public class Trie
     {
         private TrieNode Root { get; set; }
-    
+
         public Trie()
         {
             // Create a dummy root for simplicity
             Root = new TrieNode(default(char));
         }
-    
+
         // Other operations go here
     }
+```
 
 The class still doesn't do anything other than create and initialize a
 root node, but we do need to look at the purpose of this root node. The
@@ -167,10 +171,11 @@ simply loop through each part of the item and traverse the trie until
 you run out of parts or run out of nodes. If you run out of parts and
 the resulting node is a terminal, you have found a match:
 
+```csharp
     public bool Match(string s)
     {
         var it = Root;
-    
+
         foreach (var c in s)
         {
             if (!it.Links.ContainsKey(c))
@@ -178,13 +183,14 @@ the resulting node is a terminal, you have found a match:
                 // No more nodes, match failure
                 return false;
             }
-    
+
             it = it.Links[c];
         }
-    
+
         // No more characters, check for a terminal
         return it.Terminal;
     }
+```
 
 This is where one of the benefits of the dummy root takes effect. We do
 not need to terminate the end of a chain with a null link because the
@@ -198,15 +204,16 @@ Adding an item to a trie is almost as simple as searching one. It
 consists of a search, where instead of stopping when there are no more
 nodes, we insert a node and follow that new chain:
 
+```csharp
     public void Add(string s)
     {
         if (string.IsNullOrEmpty(s))
         {
             return;
         }
-    
+
         var it = Root;
-    
+
         foreach (var c in s)
         {
             if (!it.Links.ContainsKey(c))
@@ -214,13 +221,14 @@ nodes, we insert a node and follow that new chain:
                 // No more nodes, extend the chain
                 it.Links.Add(c, new TrieNode(c));
             }
-    
+
             it = it.Links[c];
         }
-    
+
         // No more characters, ensure a terminal
         it.Terminal = true;
     }
+```
 
 So when I said that no special cases for the root exist, that was a lie.
 Sorry. In the case of insertion, you'll note that the matched node after
@@ -252,39 +260,41 @@ search-based algorithms, we start by searching for the prefix. If it is
 not found then no suffixes are returned. If it *is* found, we
 recursively gather all complete chains from its child nodes:
 
+```csharp
     public IList<string> AutoComplete(string s)
     {
         var result = new List<string>();
         var it = Root;
-    
+
         foreach (var c in s)
         {
             if (!it.Links.ContainsKey(c))
             {
                 return new List<string>();
             }
-    
+
             it = it.Links[c];
         }
-    
+
         // Generate all possible suffixes
         AutoComplete(it, string.Empty, result);
-    
+
         return result;
     }
-    
+
     private void AutoComplete(TrieNode node, string temp, List<string> suffixes)
     {
         if (node.Terminal)
         {
             suffixes.Add(temp);
         }
-    
+
         foreach (var link in node.Links)
         {
             AutoComplete(link.Value, temp + link.Value.Key, suffixes);
         }
     }
+```
 
 As evidenced by the simplicity of the algorithm, this task is very easy,
 and the reason it's easy is because the trie structure makes it so. I
@@ -321,11 +331,12 @@ The structure of the trie does not change, but any future searches for
 that particular item will fail due to not matching a terminal node. Here
 is a recursive implementation:
 
+```csharp
     public void Remove(string s)
     {
         Remove(Root, s);
     }
-    
+
     private bool Remove(TrieNode root, string s)
     {
         if (string.IsNullOrEmpty(s))
@@ -335,10 +346,10 @@ is a recursive implementation:
             {
                 // Always remove the terminal flag
                 root.Terminal = false;
-    
+
                 return root.Links.Count == 0;
             }
-    
+
             return false;
         }
         else
@@ -350,14 +361,15 @@ is a recursive implementation:
                 {
                     // The previous recursive step says we can remove the child node
                     root.Links.Remove(s[0]);
-    
+
                     return root.Links.Count == 0 && root.Terminal == false;
                 }
             }
-    
+
             return false;
         }
     }
+```
 
 The requirement of recursion or simulated recursion smells funny.
 Despite tries typically being well balanced, that is not a hard
@@ -368,29 +380,30 @@ the logic is not exactly transparent. It turns out that with a parent
 pointer, the deletion algorithm becomes much clearer, and is actually
 comparable in size:
 
+```csharp
     public void Remove(string s)
     {
         var it = Root;
-    
+
         foreach (var c in s)
         {
             if (!it.Links.ContainsKey(c))
             {
                 return;
             }
-    
+
             it = it.Links[c];
         }
-    
+
         // Don't remove anything if the search
         // failed to match a complete chain.
         if (it.Terminal)
         {
-            // Always remove the terminal, because we might 
+            // Always remove the terminal, because we might
             // not actually remove this node due to subsequent
             // children.
             it.Terminal = false;
-    
+
             // Walk back up looking for nodes to remove
             while (!it.Terminal && it.Links.Count == 0 && it.Parent != null)
             {
@@ -399,18 +412,20 @@ comparable in size:
             }
         }
     }
+```
 
 Only minor changes are required to support parent pointers, as you'll
 see in our final code block of the tutorial. Here is the complete `Trie`
 class using parent pointers:
 
+```csharp
     public class TrieNode
     {
         public char Key { get; set; }
         public bool Terminal { get; set; }
         public TrieNode Parent { get; private set; }
         public Dictionary<char, TrieNode> Links { get; private set; }
-    
+
         public TrieNode(TrieNode parent, char key, bool terminal = false)
         {
             Parent = parent;
@@ -419,26 +434,26 @@ class using parent pointers:
             Links = new Dictionary<char, TrieNode>();
         }
     }
-    
+
     public class Trie
     {
         private TrieNode Root { get; set; }
-    
+
         public Trie()
         {
             // Create a dummy root for simplicity
             Root = new TrieNode(null, default(char));
         }
-    
+
         public void Add(string s)
         {
             if (string.IsNullOrEmpty(s))
             {
                 return;
             }
-    
+
             var it = Root;
-    
+
             foreach (var c in s)
             {
                 if (!it.Links.ContainsKey(c))
@@ -446,37 +461,37 @@ class using parent pointers:
                     // No more nodes, extend the chain
                     it.Links.Add(c, new TrieNode(it, c));
                 }
-    
+
                 it = it.Links[c];
             }
-    
+
             // No more characters, ensure a terminal
             it.Terminal = true;
         }
-    
+
         public void Remove(string s)
         {
             var it = Root;
-    
+
             foreach (var c in s)
             {
                 if (!it.Links.ContainsKey(c))
                 {
                     return;
                 }
-    
+
                 it = it.Links[c];
             }
-    
+
             // Don't remove anything if the search
             // failed to match a complete chain.
             if (it.Terminal)
             {
-                // Always remove the terminal, because we might 
+                // Always remove the terminal, because we might
                 // not actually remove this node due to subsequent
                 // children.
                 it.Terminal = false;
-    
+
                 // Walk back up looking for nodes to remove
                 while (!it.Terminal && it.Links.Count == 0 && it.Parent != null)
                 {
@@ -485,11 +500,11 @@ class using parent pointers:
                 }
             }
         }
-    
+
         public bool Match(string s)
         {
             var it = Root;
-    
+
             foreach (var c in s)
             {
                 if (!it.Links.ContainsKey(c))
@@ -497,61 +512,61 @@ class using parent pointers:
                     // No more nodes, match failure
                     return false;
                 }
-    
+
                 it = it.Links[c];
             }
-    
+
             // No more characters, check for a terminal
             return it.Terminal;
         }
-    
+
         #region Auto-completion
         public IList<string> AutoComplete(string s)
         {
             var result = new List<string>();
             var it = Root;
-    
+
             foreach (var c in s)
             {
                 if (!it.Links.ContainsKey(c))
                 {
                     return new List<string>();
                 }
-    
+
                 it = it.Links[c];
             }
-    
+
             // Generate all possible suffixes
             AutoComplete(it, string.Empty, result);
-    
+
             return result;
         }
-    
+
         private void AutoComplete(TrieNode node, string temp, List<string> suffixes)
         {
             if (node.Terminal)
             {
                 suffixes.Add(temp);
             }
-    
+
             foreach (var link in node.Links)
             {
                 AutoComplete(link.Value, temp + link.Value.Key, suffixes);
             }
         }
         #endregion
-    
+
         #region Structure
         public void Print()
         {
             Console.WriteLine("(root)");
             Print(Root, 0);
         }
-    
+
         private void Print(TrieNode root, int level)
         {
             Console.WriteLine(new string('\t', level) + root.Key + (root.Terminal ? "!" : ""));
-    
+
             foreach (var link in root.Links)
             {
                 Print(link.Value, level + 1);
@@ -559,6 +574,7 @@ class using parent pointers:
         }
         #endregion
     }
+```
 
 #### Performance
 

@@ -1,6 +1,6 @@
 # Random Numbers
 
-  
+
 
 The informal definition of a random sequence is where each newly
 generated number has no immediately obvious relation to the numbers
@@ -31,28 +31,30 @@ While this particular sequence is simple to calculate by hand, an
 algorithm to produce it is a trivial direct translation from the formula
 to source code:
 
+```c
     #include <stdio.h>
-    
+
     int jsw_lcg(int seed)
     {
         return  (2 * seed + 3) % 10;
     }
-    
+
     int main(void)
     {
         int seed = 5;
         int i;
-    
+
         for (i = 0; i < 10; i++)
         {
             printf("%d ", seed);
             seed = jsw_lcg(seed);
         }
-    
+
         printf("...\n");
-    
+
         return 0;
     }
+```
 
 Notice that the sequence repeats after four numbers have been generated.
 This is due to the modular arithmetic that forces wrapping of values
@@ -113,40 +115,42 @@ judged, and an acceptable algorithm should not be worse.
 The Minimal Standard Generator is relatively simple to write (assuming
 at least 32-bit integers):
 
+```c
     #include <stdio.h>
-    
+
     #define M 2147483647
     #define A 16807
     #define Q ( M / A )
     #define R ( M % A )
-    
+
     static int seed = 1;
-    
+
     int jsw_rand(void)
     {
         seed = A * (seed % Q) - R * (seed / Q);
-    
+
         if (seed <= 0)
         {
             seed += M;
         }
-    
+
         return seed;
     }
-    
+
     int main(void)
     {
         int i;
-    
+
         for (i = 0; i < 10; i++)
         {
             printf("%d ", jsw_rand());
         }
-    
+
         printf("...\n");
-    
+
         return 0;
     }
+```
 
 This is quite different from the basic LCG algorithm. The reason that
 extra work is required, is because, unlike the theoretical world, real
@@ -171,17 +175,23 @@ turning to modular arithmetic, this is a simple affair. In the above
 program, only one line must to be changed to to force the sequence into
 the range of, say, \[0, 100):
 
+```c
     printf ( "%d ", jsw_rand() % 100 );
+```
 
 To shift this range to \[1, 101), simply add 1 to the result:
 
+```c
     printf ( "%d ", jsw_rand() % 100 + 1 );
+```
 
 The second need for scaling a random number sequence is into a range
 with specific high and low values. To do this is only slightly more
 difficult:
 
+```c
     printf ( "%d ", low + ( jsw_rand() % ( high - low ) ) );
+```
 
 However, be aware that the randomness of a random number sequence is
 global for the sequence as a whole. If you shrink the range then there
@@ -189,40 +199,42 @@ is a higher probability of the sequence appearing less random. For
 example, you may have long runs of the same number if the scaled range
 is small. This is immediately obvious if you shift the range to \[0,2):
 
+```c
     #include <stdio.h>
-    
+
     #define M 2147483647
     #define A 16807
     #define Q ( M / A )
     #define R ( M % A )
-    
+
     static int seed = 1;
-    
+
     int jsw_rand(void)
     {
         seed = A * (seed % Q) - R * (seed / Q);
-    
+
         if (seed <= 0)
         {
             seed += M;
         }
-    
+
         return seed;
     }
-    
+
     int main(void)
     {
         int i;
-    
+
         for (i = 0; i < 10; i++)
         {
             printf("%d ", jsw_rand());
         }
-    
+
         printf("...\n");
-    
+
         return 0;
     }
+```
 
 It is theoretically possible that in a sequence of one million random
 numbers, of any range, a single value will be generated one million
@@ -233,24 +245,26 @@ congruential generators. A more reliable approach is to find the deviate
 of a range and multiply by N rather than use a given random number and
 take the remainder of division:
 
+```c
     #include <stdio.h>
-    
+
     /* ... */
-    
+
     int main(void)
     {
         int i;
-    
+
         for (i = 0; i < 10; i++)
         {
             jsw_rand();
             printf("%d ", (int)(uniform_deviate() * 100));
         }
-    
+
         printf("...\n");
-    
+
         return 0;
     }
+```
 
 The linear congruential generator shown so far is the
 bottom-of-the-bucket generator, and it does have problems. In fact,
@@ -270,6 +284,7 @@ of LCG and suggests a combination of two LCG algorithms with m1 =
 implementation is only marginally more difficult than a single-phase
 algorithm using either one of those:
 
+```c
     #define M1 2147483647
     #define M2 2147483399
     #define A1 40015
@@ -278,36 +293,37 @@ algorithm using either one of those:
     #define Q2 ( M2 / A2 )
     #define R1 ( M1 % A1 )
     #define R2 ( M2 % A2 )
-    
+
     static int seed1 = 1, seed2 = 1;
-    
+
     /* Dual-Phase Linear Congruential Generator */
     int jsw_rand(void)
     {
         int result;
-    
+
         seed1 = A1 * (seed1 % Q1) - R1 * (seed1 / Q1);
         seed2 = A2 * (seed2 % Q2) - R2 * (seed2 / Q2);
-    
+
         if (seed1 <= 0)
         {
             seed1 += M1;
         }
-    
+
         if (seed2 <= 0)
         {
             seed2 += M2;
         }
-    
+
         result = seed1 - seed2;
-    
+
         if (result < 1)
         {
             result += M1 - 1;
         }
-    
+
         return result;
     }
+```
 
 The only problem with this approach is that multiple seeds must be
 maintained. This is an issue because to avoid repeating the sequence
@@ -317,8 +333,9 @@ Minimal Standard Generator, two are needed with a dual-phase generator,
 three for a tri-phase generator, and so on. This initialization can be
 done with a helper function that “seeds” the random number generator:
 
+```c
     #include <stdio.h>
-    
+
     #define M1 2147483647
     #define M2 2147483399
     #define A1 40015
@@ -327,65 +344,66 @@ done with a helper function that “seeds” the random number generator:
     #define Q2 ( M2 / A2 )
     #define R1 ( M1 % A1 )
     #define R2 ( M2 % A2 )
-    
+
     static int seed1 = 1, seed2 = 1;
-    
+
     void jsw_seed(int s1, int s2)
     {
         seed1 = s1;
         seed2 = s2;
     }
-    
+
     /* Dual-Phase Linear Congruential Generator */
     int jsw_rand(void)
     {
         int result;
-    
+
         seed1 = A1 * (seed1 % Q1) - R1 * (seed1 / Q1);
         seed2 = A2 * (seed2 % Q2) - R2 * (seed2 / Q2);
-    
+
         if (seed1 <= 0)
         {
             seed1 += M1;
         }
-    
+
         if (seed2 <= 0)
         {
             seed2 += M2;
         }
-    
+
         result = seed1 - seed2;
-    
+
         if (result < 1)
         {
             result += M1 - 1;
         }
-    
+
         return result;
     }
-    
+
     int main(void)
     {
         int i;
-    
+
         for (i = 0; i < 10; i++)
         {
             printf("%d ", jsw_rand() % 100);
         }
-    
+
         printf("...\n");
-    
+
         jsw_seed(12345, 23456);
-    
+
         for (i = 0; i < 10; i++)
         {
             printf("%d ", jsw_rand() % 100);
         }
-    
+
         printf("...\n");
-    
+
         return 0;
     }
+```
 
 Because **seed1** and **seed2** are statically initialized to 1, that is
 the default seed for the generator. However, by calling **jsw\_seed**,
@@ -399,47 +417,49 @@ simplest form, this is called a uniform deviate, and it is easy to
 produce from the result of a call to **jsw\_rand**. Simply multiply the
 value returned by **jsw\_rand** by 1/m:
 
+```c
     #include <stdio.h>
-    
+
     #define M 2147483647
     #define A 16807
     #define Q ( M / A )
     #define R ( M % A )
-    
+
     static int seed = 1;
-    
+
     /* Single-Phase Linear Congruential Generator */
     int jsw_rand(void)
     {
         seed = A * (seed % Q) - R * (seed / Q);
-    
+
         if (seed <= 0)
         {
             seed += M;
         }
-    
+
         return seed;
     }
-    
+
     double uniform_deviate(void)
     {
         return (double)seed * (1.0 / M);
     }
-    
+
     int main(void)
     {
         int i;
-    
+
         for (i = 0; i < 10; i++)
         {
             jsw_rand();
             printf("%f\n", uniform_deviate());
         }
-    
+
         printf("\n");
-    
+
         return 0;
     }
+```
 
 Fortunately, or unfortunately, depending on your opinion of the quality
 of common implementations of the standard library, the C standard
@@ -449,31 +469,33 @@ These functions are called **rand**, and **srand**, respectively. Their
 use is surprisingly simple, and fairly consistent with the design of
 **jsw\_rand** and **jsw\_seed**:
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
-    
+
     int main(void)
     {
         int i;
-    
+
         for (i = 0; i < 10; i++)
         {
             printf("%d ", rand() % 100);
         }
-    
+
         printf("\n");
-    
+
         srand(12345U);
-    
+
         for (i = 0; i < 10; i++)
         {
             printf("%d ", rand() % 100);
         }
-    
+
         printf("\n");
-    
+
         return 0;
     }
+```
 
 Now, instead of the definition for **jsw\_rand** and **jsw\_seed**, all
 you have to do is include **stdlib.h** (or **cstdlib** for C++). To
@@ -493,69 +515,75 @@ with every standard library, to use the high-order bits of a random
 number through division rather than low-order bits with the remainder of
 division:
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
-    
+
     int main(void)
     {
         int i;
-    
+
         for (i = 0; i < 10; i++)
         {
             printf("%d ", rand() / (RAND_MAX / 100 + 1));
         }
-    
+
         printf("...\n");
-    
+
         return 0;
     }
+```
 
 An alternative to dividing **RAND\_MAX** by N is to force the expression
 to floating-point and multiply **RAND\_MAX** by N:
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
-    
+
     int main(void)
     {
         int i;
-    
+
         for (i = 0; i < 10; i++)
         {
             printf("%d ", (int)(rand() / (RAND_MAX + 1.0) * 100));
         }
-    
+
         printf("...\n");
-    
+
         return 0;
     }
+```
 
 Yet another alternative is to utilize the **uniform\_deviate** function
 provided not too long ago. The rules still apply, even though we are now
 using a library function rather than rolling our own, so modifying
 **uniform\_deviate** to work with rand is an exercise in the trivial:
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
-    
+
     double uniform_deviate(int seed)
     {
         return seed * (1.0 / (RAND_MAX + 1.0));
     }
-    
+
     int main(void)
     {
         int i;
-    
+
         for (i = 0; i < 10; i++)
         {
             printf("%d ", (int)(uniform_deviate(rand()) * 100));
         }
-    
+
         printf("...\n");
-    
+
         return 0;
     }
+```
 
 However, at the time of writing, implementations have improved such that
 modulus will likely work, and if it does not work, chances are good that
@@ -573,57 +601,59 @@ the original paper, which is an interesting read and provided the
 majority of the information required to create the following two
 functions:
 
+```c
     #define N 624
     #define M 397
     #define A 0x9908b0dfUL
     #define U 0x80000000UL
     #define L 0x7fffffffUL
-    
+
     static unsigned long x[N];
     static int next;
-    
+
     void jsw_seed(unsigned long s)
     {
         int i;
-    
+
         x[0] = s & 0xffffffffUL;
-    
+
         for (i = 1; i < N; i++) {
             x[i] = (1812433253UL * (x[i - 1] ^ (x[i - 1] >> 30)) + i);
             x[i] &= 0xffffffffUL;
         }
     }
-    
+
     unsigned long jsw_rand(void)
     {
         unsigned long y, a;
         int i;
-    
+
         /* Refill x if exhausted */
         if (next == N) {
             next = 0;
-    
+
             for (i = 0; i < N - 1; i++) {
                 y = (x[i] & U) | x[i + 1] & L;
                 a = (y & 0x1UL) ? A : 0x0UL;
                 x[i] = x[(i + M) % N] ^ (y >> 1) ^ a;
             }
-    
+
             y = (x[N - 1] & U) | x[0] & L;
             a = (y & 0x1UL) ? A : 0x0UL;
             x[N - 1] = x[M - 1] ^ (y >> 1) ^ a;
         }
-    
+
         y = x[next++];
-    
+
         /* Improve distribution */
         y ^= (y >> 11);
         y ^= (y << 7) & 0x9d2c5680UL;
         y ^= (y << 15) & 0xefc60000UL;
         y ^= (y >> 18);
-    
+
         return y;
     }
+```
 
 The Mersenne Twister is surprisingly short for how good it is, but, like
 most effective random number generators, the code is almost completely
@@ -639,32 +669,34 @@ appear to be random, or at least change with each run of the program. As
 a result, most people prefer to seed their random number generator with
 the current system time. The code typically looks like this:
 
+```c
     #include <stdio.h>
     #include <stdlib.h>
     #include <time.h>
-    
+
     int main(void)
     {
         int i;
-    
+
         for (i = 0; i < 10; i++)
         {
             printf("%d ", rand() % 100);
         }
-    
+
         printf("...\n");
-    
+
         srand((unsigned)time(NULL));
-    
+
         for (i = 0; i < 10; i++)
         {
             printf("%d ", rand() % 100);
         }
-    
+
         printf("...\n");
-    
+
         return 0;
     }
+```
 
 Now, while I am not aware of a system where this would not work, it is
 technically not portable because the C (and C++) standards do not
@@ -674,48 +706,50 @@ has been suggested that a hash can be taken of the bytes of the
 **time\_t**, converted to **unsigned**, and passed to **srand**. The
 following is based on a function by Lawrence Kirby via Ben Pfaff:
 
+```c
     #include <limits.h>
     #include <stdio.h>
     #include <stdlib.h>
     #include <time.h>
-    
+
     unsigned time_seed(void)
     {
         time_t now = time(NULL);
         unsigned char *p = (unsigned char *)&now;
         unsigned seed = 0;
         size_t i;
-    
+
         for (i = 0; i < sizeof now; i++)
         {
             seed = seed * (UCHAR_MAX + 2U) + p[i];
         }
-    
+
         return seed;
     }
-    
+
     int main(void)
     {
         int i;
-    
+
         for (i = 0; i < 10; i++)
         {
             printf("%d ", rand() % 100);
         }
-    
+
         printf("\n");
-    
+
         srand(time_seed());
-    
+
         for (i = 0; i < 10; i++)
         {
             printf("%d ", rand() % 100);
         }
-    
+
         printf("\n");
-    
+
         return 0;
     }
+```
 
 Random numbers are a pain in the butt. However, they're terribly
 interesting, and very useful in many applications of computer science.

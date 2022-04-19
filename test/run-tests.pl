@@ -44,12 +44,12 @@ sub mysystem {
 }
 
 foreach my $lib (@libs) {
-    my $libdir = "../jsw_$lib";
+    my $libdir = "../src/jsw_$lib";
     my $testname = "test-$lib";
     my @cmd = ($cc, "-Wall", "-g", "-o", $testname, "-I$libdir");
     if ($lib eq "slib") {
-        push @cmd, "-I../jsw_rand";
-        push @cmd, "../jsw_rand/jsw_rand.c";
+        push @cmd, "-I../src/jsw_rand";
+        push @cmd, "../src/jsw_rand/jsw_rand.c";
     }
     push @cmd, "$libdir/jsw_$lib.c";
     push @cmd, "$testname.c";

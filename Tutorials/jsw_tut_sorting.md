@@ -1,6 +1,6 @@
 # Sorting
 
-  
+
 
 I'm confident that you already know what sorting is. Not only is it a
 concept that saturates computer science, it's also pretty intuitive.
@@ -94,7 +94,7 @@ sorted sequence. However, consider the more common situation where items
 consist of more than one value, and only one of those values is used as
 the item for sorting:
 
-``` 
+```
  |(5:4)|(6:6)|(3:1)|(5:5)|(1:0)|(3:2)|(4:3)|(6:7)|
 ```
 
@@ -103,7 +103,7 @@ result that retains the original order of the second half of the item.
 In other words, the second values have to be in sorted ascending order
 after the sort is finished, or the algorithm isn't stable:
 
-``` 
+```
  |(1:0)|(3:1)|(3:2)|(4:3)|(5:4)|(5:5)|(6:6)|(6:7)|
 ```
 
@@ -144,7 +144,7 @@ algorithm that sorts by comparison will have a minimum lower bound of
 that's sorted. A comparison tree for the three numbers 1,2, and 3 can be
 easily constructed:
 
-``` 
+```
                              1 < 2
 
                1 < 3                       1 < 3
@@ -184,22 +184,25 @@ much of the code. Rather than keep repeating myself, I'll supply it all
 here. The first is a swap function that takes pointers to two items and
 swaps the items:
 
+```c
     void jsw_swap(int *a, int *b)
     {
         int c = *a;
         *a = *b;
         *b = c;
     }
+```
 
 Next, it's useful to be able to quickly determine if an array is already
 sorted or not for testing, and we'll use it as an optimization feature
 later, so here is a function that returns 1 if the array is sorted and 0
 if it isn't:
 
+```c
     int is_sorted(int a[], int n)
     {
         int i;
-    
+
         for (i = 0; i < n - 1; i++)
         {
             if (a[i] > a[i + 1])
@@ -207,25 +210,28 @@ if it isn't:
                 return 0;
             }
         }
-    
+
         return 1;
     }
+```
 
 Finally, some of the algorithms work with linked lists. To save you the
 trouble of figuring out what I mean, here's the node and list structure
 that I built the lists with:
 
+```c
     struct jsw_node
     {
         int data;
         struct jsw_node *next;
     };
-    
+
     struct jsw_list
     {
         struct jsw_node *head;
         int size;
     };
+```
 
 #### Selection Sort
 
@@ -237,7 +243,7 @@ last two, and so on until all items are ignored. When all items are
 ignored, they are all in their sorted position, and the algorithm is
 complete. An example of this simple process follows:
 
-``` 
+```
  |41|67|34|00|69|24|78|58|62|64<
  |41|67|34|00|69|24|64|58|62<78|
  |41|67|34|00|62|24|64|58<69|78|
@@ -261,12 +267,13 @@ an item with itself. This algorithm looks at every item in the array to
 find the largest. It has to, because no other order has been imposed on
 the array to make selection easier, so it's slow:
 
+```c
     void jsw_selection(int a[], int n)
     {
         while (--n > 0)
         {
             int i, max = n;
-    
+
             for (i = 0; i < n; i++)
             {
                 if (a[i] > a[max])
@@ -274,13 +281,14 @@ the array to make selection easier, so it's slow:
                     max = i;
                 }
             }
-    
+
             if (max != n)
             {
                 jsw_swap(&a[n], &a[max]);
             }
         }
     }
+```
 
 There are a few important little factoids about straight selection sort
 that you need to remember. First, all of the items have to be present
@@ -305,12 +313,13 @@ instead of swap Of course, this removes the primary benefit of selection
 sort, lack of data movement, because we're moving items around in the
 shift:
 
+```c
     void jsw_selection(int a[], int n)
     {
         while (--n > 0)
         {
             int i, max = n;
-    
+
             for (i = 0; i < n; i++)
             {
                 if (a[i] >= a[max])
@@ -318,20 +327,21 @@ shift:
                     max = i;
                 }
             }
-    
+
             if (max != n)
             {
                 int save = a[max];
-    
+
                 for (i = max; i < n; i++)
                 {
                     a[i] = a[i + 1];
                 }
-    
+
                 a[n] = save;
             }
         }
     }
+```
 
 Let's look at how that works with a quick trace by adding some extra
 data to each item and throwing in a few duplicates. Notice how the
@@ -339,7 +349,7 @@ secondary numbers are in the same order after the sort as before the
 sort. For example, 69,4 is in front of 69,5 both before and after the
 algorithm touches them:
 
-``` 
+```
  |41,0|41,1|34,2|00,3|69,4|69,5|78,6|78,7|62,8|64,9<
  |41,0|41,1|34,2|00,3|69,4|69,5|78,6|62,8|64,9<78,7|
  |41,0|41,1|34,2|00,3|69,4|69,5|62,8|64,9<78,6|78,7|
@@ -374,21 +384,23 @@ do that with a priority queue, where items are ordered so that
 extracting the largest item is quick and easy. The code to do that if we
 assume an existing priority queue library is simplicity itself:
 
+```c
     void jsw_selection(int a[], int n)
     {
         pqueue pq;
         int i;
-    
+
         for (i = 0; i < n; i++)
         {
             pq_insert(pq, a[i]);
         }
-    
+
         while (!pq_empty(pq))
         {
             a[--n] = pq_max(pq);
         }
     }
+```
 
 Okay, but what if that nifty little library doesn't already exist? Well,
 we need to do it manually. The best known priority queue implementation
@@ -399,7 +411,7 @@ If you have a valid max heap then the largest item is the root of the
 tree. This structure can be easily converted into an array because the
 tree is complete, so there are no gaps:
 
-``` 
+```
  |962|500|724|467|464|334|478|358|41|169|
 
  is equivalent to
@@ -440,7 +452,7 @@ array and the nodes without children are the last half. So to build a
 heap, all we need to do is force the heap property from the lowest nodes
 to the root. Let's look at an example:
 
-``` 
+```
  |1|67|34|0|69|24|78|58|62|64|
 
 
@@ -466,7 +478,7 @@ than 69, the heap property holds. Then we move to 0 and its children. 62
 is the largest of the three, so we swap 62 and 0. Note that the relative
 order of the children is irrelevant:
 
-``` 
+```
  |1|67|34|62|69|24|78|58|0|64|
 
 
@@ -490,7 +502,7 @@ just decrementing the parent index though. At 34, we test the 3 nodes
 and find that 78 is the largest. So we swap 78 and 34 to restore the
 heap property:
 
-``` 
+```
  |1|67|78|62|69|24|34|58|0|64|
 
 
@@ -512,7 +524,7 @@ heap property:
 Now we go left to 67 and its two children. Since 69 is the greatest of
 the children and is greater than 67, we swap 67 and 69:
 
-``` 
+```
  |1|69|78|62|67|24|34|58|0|64|
 
 
@@ -541,7 +553,7 @@ We can do this because we build a heap from the bottom up, so the lower
 subtrees are always valid heaps unless a change higher up the tree
 violates it. Let's do the final step by fixing 78's right subtree:
 
-``` 
+```
  |1|69|78|62|67|24|34|58|0|64|
 
 
@@ -569,41 +581,43 @@ largest child and the parent if the child is larger. Notice how the **i
 \* 2 + 1** trick is used to find the first child. **jsw\_heapsort** is
 just a translation of the priority queue pseudocode:
 
+```c
     void jsw_do_heap(int a[], int i, int n)
     {
         int k = i * 2 + 1;
-    
+
         while (k < n)
         {
             if (k + 1 < n && a[k] < a[k + 1])
             {
                 ++k;
             }
-    
+
             if (a[i] < a[k])
             {
                 jsw_swap(&a[i], &a[k]);
             }
-    
+
             k = ++i * 2 + 1;
         }
     }
-    
+
     void jsw_heapsort(int a[], int n)
     {
         int i = n / 2;
-    
+
         while (i-- > 0)
         {
             jsw_do_heap(a, i, n);
         }
-    
+
         while (--n > 0)
         {
             jsw_swap(&a[0], &a[n]);
             jsw_do_heap(a, 0, n);
         }
     }
+```
 
 This is a surprisingly simple algorithm for how good heap sort is
 supposed to be, but it's not very fast, and we can do much better with
@@ -615,29 +629,31 @@ loop. We can simply save the first root that we're pushing down, move
 children into its place, and after the loop is finished, put that saved
 node into its final resting place:
 
+```c
     void jsw_do_heap(int a[], int i, int n)
     {
         int k = i * 2 + 1;
         int save = a[i];
-    
+
         while (k < n)
         {
             if (k + 1 < n && a[k] < a[k + 1])
             {
                 ++k;
             }
-    
+
             if (save >= a[k])
             {
                 break;
             }
-    
+
             a[i] = a[k];
             k = ++i * 2 + 1;
         }
-    
+
         a[i] = save;
     }
+```
 
 That's much faster than our last attempt, but because we're only
 incrementing **i** by 1 each time, we're basically fixing the entire
@@ -648,30 +664,32 @@ several orders of magnitude. **jsw\_heapsort** doesn't change throughout
 all of these improvements, and we come to the final (and fastest)
 incarnation of heapsort for this tutorial:
 
+```c
     void jsw_do_heap(int a[], int i, int n)
     {
         int k = i * 2 + 1;
         int save = a[i];
-    
+
         while (k < n)
         {
             if (k + 1 < n && a[k] < a[k + 1])
             {
                 ++k;
             }
-    
+
             if (save >= a[k])
             {
                 break;
             }
-    
+
             a[i] = a[k];
             i = k;
             k = i * 2 + 1;
         }
-    
+
         a[i] = save;
     }
+```
 
 Okay, I'm a liar. :-) We'll look at another alternative before moving
 on. A lot of people are surprised to learn that heap sort can be
@@ -684,7 +702,7 @@ relationship between each index and its child indices. If you think
 about the simple calculation for finding a child, you'll come up with
 the following pattern:
 
-``` 
+```
  |41|67|34|0|69|24|78|58|62|64|
  |41|67|34|
     |67|  |0|69|
@@ -703,13 +721,14 @@ index increments by 1 each time and the index of the first child
 increments by 2, we can work directly with the pattern by using two
 indices (once again, **jsw\_heapsort** remains unchanged):
 
+```c
     #define jmax(p,q) (*(p) > *(q) ? (p) : (q))
     #define maxof3(p,q,r) jmax((p), jmax ((q), (r)))
-    
+
     void jsw_do_heap(int a[], int i, int n)
     {
         int k;
-    
+
         for (k = i + 1; k < n; i++, k += 2)
         {
             if (k == n - 1)
@@ -725,6 +744,7 @@ indices (once again, **jsw\_heapsort** remains unchanged):
             }
         }
     }
+```
 
 But this is really two steps backward since it's even slower than our
 first attempt at heapsort, and implementing the same optimizations that
@@ -756,7 +776,7 @@ common example is sorting a bridge hand, but I don't play bridge and I
 don't know anyone that does, so an execution trace on our list of
 numbers as an example would fare better:
 
-``` 
+```
   1)  |41|
   2)  |41|67|
   3)  |34|41|67|
@@ -788,7 +808,7 @@ Note that sorting by insertion can be done in-place without using any
 extra memory. Using insertion sort on an existing array of items would
 result in the following execution:
 
-``` 
+```
   1)  |41>67|34|00|69|24|78|58|62|64|
   2)  |41|67>34|00|69|24|78|58|62|64|
   3)  |34|41|67>00|69|24|78|58|62|64|
@@ -806,22 +826,24 @@ item in the array, then make a hole where it needs to go and insert it.
 In fact, insertion sort is considered to be one of the simplest sorting
 algorithms both in concept and in implementation:
 
+```c
     void jsw_insertion(int a[], int n)
     {
         int i;
-    
+
         for (i = 1; i < n; i++)
         {
             int j, save = a[i];
-    
+
             for (j = i; j >= 1 && a[j - 1] > save; j--)
             {
                 a[j] = a[j - 1];
             }
-    
+
             a[j] = save;
         }
     }
+```
 
 Unfortunately, being one of the simplest sorting algorithms also means
 that insertion sort is also one of the least efficient. It's in the
@@ -841,15 +863,16 @@ list pointer back to the temporary list before returning. The temporary
 list only has the overhead of an extra variable, so it's space
 efficient:
 
+```c
     void jsw_insertion(struct jsw_list *list)
     {
         struct jsw_node result = { 0 };
         struct jsw_node *i, *step, *next;
-    
+
         for (step = list->head; step != NULL; step = next)
         {
             next = step->next;
-    
+
             for (i = &result; i->next != NULL; i = i->next)
             {
                 if (i->next->data > step->data)
@@ -857,13 +880,14 @@ efficient:
                     break;
                 }
             }
-    
+
             step->next = i->next;
             i->next = step;
         }
-    
+
         list->head = result.next;
     }
+```
 
 #### Shell Sort
 
@@ -877,7 +901,7 @@ into two groups of five, then sorting each corresponding value in those
 groups, then combining the groups and sorting the one group results in
 the following execution:
 
-``` 
+```
   1)  |41|67|34|00|69|   |24|78|58|62|64|
   2)  |24|67|34|00|69|   |41|78|58|62|64|
   3)  |24|67|34|00|69|   |41|78|58|62|64|
@@ -894,7 +918,7 @@ the following execution:
 Hmm, not much better, is it? How about we divide the array into four
 groups instead of two? That might be better:
 
-``` 
+```
   1)  |41|67|   |34|00|69|   |24|78|   |58|62|64|
   2)  |24|67|   |34|00|69|   |41|78|   |58|62|64|
   3)  |24|00|   |34|62|69|   |41|67|   |58|78|64|
@@ -914,32 +938,34 @@ called the h-increment) of items. As long as the groups eventually
 shrink down to N groups of 1, the final step is a straight insertion and
 the algorithm terminates successfully:
 
+```c
     void jsw_shellsort(int a[], int n)
     {
         int i, h = 1;
-    
+
         while (h <= n / 9)
         {
             h = 3 * h + 1;
         }
-    
+
         while (h > 0)
         {
             for (i = h; i < n; i++)
             {
                 int j, save = a[i];
-    
+
                 for (j = i; j >= h && a[j - h] > save; j -= h)
                 {
                     a[j] = a[j - h];
                 }
-    
+
                 a[j] = save;
             }
-    
+
             h /= 3;
         }
     }
+```
 
 The only difference between this code and the insertion sort is that
 we've added an extra loop around the insertion sort that handles the
@@ -981,7 +1007,7 @@ the great honor of boasting the worst sorting algorithm that you might
 see in the real world (if you're unlucky). Here is a look at the most
 obvious algorithm:
 
-``` 
+```
   1)  |41|67|34|00|69|24|78|58|62|64|
   2)  |41>34|67|00|69|24|78|58|62|64|
   3)  |41|34>00|67|69|24|78|58|62|64|
@@ -1019,14 +1045,15 @@ very specific and unlikely circumstances, and for everything else it
 just sucks too much. For comparison and completeness, I'll provide an
 implementation of the bubble sort as it's usually taught:
 
+```c
     void jsw_bubblesort(int a[], int n)
     {
         int i;
-    
+
         for (i = 0; i < n; i++)
         {
             int j;
-    
+
             for (j = n - 1; j > 0; j--)
             {
                 if (a[j] < a[j - 1])
@@ -1036,6 +1063,7 @@ implementation of the bubble sort as it's usually taught:
             }
         }
     }
+```
 
 Well, you have to admit that it's simple. Of course, once you optimize
 it a bit, that simplicity starts to go away. A flag for testing whether
@@ -1048,14 +1076,15 @@ performance significantly, and simpler algorithms, such as insertion
 sort, will almost always outperform it. Here's the “optimized” bubble
 sort:
 
+```c
     void jsw_bubblesort(int a[], int n)
     {
         int i;
-    
+
         for (i = 0; i < n; i++)
         {
             int j, done = 1;
-    
+
             for (j = n - 1; j > 0; j--)
             {
                 if (a[j] < a[j - 1])
@@ -1064,13 +1093,14 @@ sort:
                     done = 0;
                 }
             }
-    
+
             if (done)
             {
                 break;
             }
         }
     }
+```
 
 Bubble sort is a quadratic algorithm, but it's frighteningly inefficient
 even if you only compare it with other quadratic algorithms. Words can't
@@ -1118,21 +1148,23 @@ Assuming a partition function, we can easily write a recursive function
 to partition, then recursively do the same thing on each subarray as
 long as the subarray has more than one item:
 
+```c
     void jsw_quicksort_r(int a[], int first, int last)
     {
         if (first < last)
         {
             int pivot = jsw_partition(a, first, last);
-    
+
             jsw_quicksort_r(a, first, pivot - 1);
             jsw_quicksort_r(a, pivot + 1, last);
         }
     }
-    
+
     void jsw_quicksort(int a[], int n)
     {
         jsw_quicksort_r(a, 0, n - 1);
     }
+```
 
 Let's look at a sample execution to see how this function could possibly
 work. It's not obvious at first unless you're familiar with recursion
@@ -1141,7 +1173,7 @@ recursively results in a sorted file. In this example, we take the first
 item in each subarray and use it as the median and ignore cases where
 the subarray is too small to partition:
 
-``` 
+```
  |41|67|34|00|69|24|78|58|62|64|
  |41|34|00|24|58|62|64|69|67|78|
  |41|34|00|24|58|62|
@@ -1165,24 +1197,26 @@ of the median value so there's no need to include it in the recursive
 calls as it's already sorted after partitioning. Here's the code that
 performs the partition magic:
 
+```c
     int jsw_partition(int a[], int first, int last)
     {
         int pivot = first;
-    
+
         while (first < last)
         {
             if (a[first] <= a[last])
             {
                 jsw_swap(&a[pivot++], &a[first]);
             }
-    
+
             ++first;
         }
-    
+
         jsw_swap(&a[pivot], &a[last]);
-    
+
         return pivot;
     }
+```
 
 Partitioning an array is surprisingly difficult to get right. The
 algorithm above is a relatively safe, simple, and efficient one that
@@ -1216,27 +1250,29 @@ in the array because the partition algorithm assumes that pivot starts
 at first. Otherwise we would end up walking off the end of the array,
 and that's never a good thing. ;-) The changes are minimal:
 
+```c
     int jsw_partition(int a[], int first, int last)
     {
         int pivot = first + rand() % (last - first + 1);
-    
+
         jsw_swap(&a[pivot], &a[first]);
         pivot = first;
-    
+
         while (first < last)
         {
             if (a[first] <= a[last])
             {
                 jsw_swap(&a[pivot++], &a[first]);
             }
-    
+
             ++first;
         }
-    
+
         jsw_swap(&a[pivot], &a[last]);
-    
+
         return pivot;
     }
+```
 
 Notice that the code to find a random index within the range is somewhat
 complicated. We need to take into account that **first** is not always
@@ -1254,36 +1290,38 @@ instead of picking a random index and swapping its item with
 **a\[first\]**, we pick the median of **a\[first\]**, **a\[mid\]**, and
 **a\[last\]**, then swap that median with **a\[first\]**:
 
+```c
     int jsw_partition(int a[], int first, int last)
     {
         int pivot, mid = (first + last) / 2;
-    
+
         /* Largest of two */
         pivot = a[first] > a[mid] ? first : mid;
-    
+
         /* Smallest of remaining */
         if (a[pivot] > a[last])
         {
             pivot = last;
         }
-    
+
         jsw_swap(&a[pivot], &a[first]);
         pivot = first;
-    
+
         while (first < last)
         {
             if (a[first] <= a[last])
             {
                 jsw_swap(&a[pivot++], &a[first]);
             }
-    
+
             ++first;
         }
-    
+
         jsw_swap(&a[pivot], &a[last]);
-    
+
         return pivot;
     }
+```
 
 The next improvement is an optimization that doesn't touch
 **jsw\_partition** (yay\!). Since it's really a waste to recurse on
@@ -1299,22 +1337,24 @@ discovered that it's slightly more efficient to call insertion sort
 after quicksort finishes, which brings us to this (where **THRESHOLD**
 is a macro with whatever cutoff value you choose):
 
+```c
     void jsw_quicksort_r(int a[], int first, int last)
     {
         if (last - first > THRESHOLD)
         {
             int pivot = jsw_partition(a, first, last);
-    
+
             jsw_quicksort_r(a, first, pivot - 1);
             jsw_quicksort_r(a, pivot + 1, last);
         }
     }
-    
+
     void jsw_quicksort(int a[], int n)
     {
         jsw_quicksort_r(a, 0, n - 1);
         jsw_insertion(a, n);
     }
+```
 
 The next optimization that we'll look at handles the problem of already
 sorted subarrays. If the subarrays are already sorted or have a large
@@ -1325,22 +1365,24 @@ if the subarray is already sorted and doing nothing if it is. The change
 is made to **jsw\_quicksort\_r**, and we can use the **is\_sorted**
 function given earlier:
 
+```c
     void jsw_quicksort_r(int a[], int first, int last)
     {
         if (last - first > THRESHOLD)
         {
             int pivot;
-    
+
             if (is_sorted(a, first, last))
             {
                 return;
             }
-    
+
             pivot = jsw_partition(a, first, last);
             jsw_quicksort_r(a, first, pivot - 1);
             jsw_quicksort_r(a, pivot + 1, last);
         }
     }
+```
 
 You might be thinking that calling a linear function might have
 performance issues, but in practice it actually makes quicksort faster.
@@ -1379,6 +1421,7 @@ well as already sorted subarrays. The resulting algorithm is called
 introsort, short for introspective sort because it's smart enough to
 change how it works when things start to get hairy:
 
+```c
     void jsw_introsort_r(int a[], int first, int last, int depth)
     {
         if (last - first > THRESHOLD)
@@ -1390,24 +1433,25 @@ change how it works when things start to get hairy:
             else
             {
                 int pivot;
-    
+
                 if (is_sorted(a, first, last))
                 {
                     return;
                 }
-    
+
                 pivot = jsw_partition(a, first, last);
                 jsw_introsort_r(a, first, pivot - 1, depth - 1);
                 jsw_introsort_r(a, pivot + 1, last, depth - 1);
             }
         }
     }
-    
+
     void jsw_introsort(int a[], int n)
     {
         jsw_introsort_r(a, 0, n - 1, (int)(2 * log(n)));
         jsw_insertion(a, n);
     }
+```
 
 Heap sort and quicksort remain unchanged, as does insertion sort, but we
 need to be careful to only call heapsort on the correct subarray, which
@@ -1419,6 +1463,7 @@ remove the left side recursion in favor of a loop. This change helps to
 negate any overhead that introsort might have so that it's that much
 closer to a plain quicksort in the average case:
 
+```c
     void jsw_introsort_r(int a[], int first, int last, int depth)
     {
         while (last - first > THRESHOLD)
@@ -1430,18 +1475,19 @@ closer to a plain quicksort in the average case:
             else
             {
                 int pivot;
-    
+
                 if (is_sorted(a, first, last))
                 {
                     return;
                 }
-    
+
                 pivot = jsw_partition(a, first, last);
                 jsw_introsort_r(a, pivot + 1, last, depth - 1);
                 last = pivot - 1;
             }
         }
     }
+```
 
 Note that heap sort isn't a requirement. You can use any sorting
 algorithm that guarantees at least O(Nlog N) performance, such as merge
@@ -1461,22 +1507,24 @@ subarrays of 1 item. At that point, you merge all of the subarrays
 together and the array is sorted. The basic code for this process is
 similar to quicksort:
 
+```c
     void jsw_mergesort_r(int a[], int first, int last)
     {
         if (first < last - 1)
         {
             int mid = (first + last) / 2;
-    
+
             jsw_mergesort_r(a, first, mid);
             jsw_mergesort_r(a, mid, last);
             jsw_merge(a, first, mid, last);
         }
     }
-    
+
     void jsw_mergesort(int a[], int n)
     {
         jsw_mergesort_r(a, 0, n);
     }
+```
 
 It seems as if merge sort is the inverse of quicksort. Where quicksort
 first partitions and then recurses, merge sort recurses and then merges,
@@ -1498,11 +1546,12 @@ the final array. When one of the sequences is exhausted, copy the other
 in bulk to the final array. Here is one algorithm, called straight
 merging, that's easy to understand and works well in many cases:
 
+```c
     void jsw_merge(int a[], int first, int mid, int last)
     {
         int i = first, j = mid, k = 0;
         int *save = malloc((last - first) * sizeof *save);
-    
+
         while (i < mid && j < last)
         {
             if (a[i] <= a[j])
@@ -1514,24 +1563,25 @@ merging, that's easy to understand and works well in many cases:
                 save[k++] = a[j++];
             }
         }
-    
+
         while (i < mid)
         {
             save[k++] = a[i++];
         }
-    
+
         while (j < last)
         {
             save[k++] = a[j++];
         }
-    
+
         for (i = 0; i < (last - first); i++)
         {
             a[first + i] = save[i];
         }
-    
+
         free(save);
     }
+```
 
 The merge simply works with two subarrays: a left subarray from first to
 mid, and a right subarray from mid to last. As long as there are items
@@ -1543,7 +1593,7 @@ not before freeing the memory we allocated). Here's an execution trace
 of the entire sorting algorithm (leaving out the base cases because they
 do nothing):
 
-``` 
+```
  |41|67|34|00|69|24|78|58|62|64|
  |41|67|34|00|69|
  |41|67|
@@ -1606,27 +1656,28 @@ a list in this way and then sort it by merging is relatively simple. The
 split is easy to write, the merge is far easier to write and far
 shorter, and the sort really doesn't change that much:
 
+```c
     struct jsw_node *jsw_split(struct jsw_node *a)
     {
         struct jsw_node *b = a->next;
-    
+
         while (b != NULL && b->next != NULL)
         {
             a = a->next;
             b = b->next->next;
         }
-    
+
         b = a->next;
         a->next = NULL;
-    
+
         return b;
     }
-    
+
     struct jsw_node *jsw_merge(struct jsw_node *a, struct jsw_node *b)
     {
         struct jsw_node result, *it = &result;
         struct jsw_node **half;
-    
+
         while (a != NULL && b != NULL)
         {
             half = (a->data < b->data) ? &a : &b;
@@ -1634,31 +1685,32 @@ shorter, and the sort really doesn't change that much:
             it = *half;
             *half = (*half)->next;
         }
-    
+
         it->next = (a == NULL) ? b : a;
-    
+
         return result.next;
     }
-    
+
     struct jsw_node *jsw_mergesort_r(struct jsw_node *a)
     {
         if (a != NULL && a->next != NULL)
         {
             struct jsw_node *b = jsw_split(a);
-    
+
             a = jsw_mergesort_r(a);
             b = jsw_mergesort_r(b);
-    
+
             return jsw_merge(a, b);
         }
-    
+
         return a;
     }
-    
+
     void jsw_mergesort(struct jsw_list *list)
     {
         list->head = jsw_mergesort_r(list->head);
     }
+```
 
 However, as I've already said several times, **jsw\_split** slows down
 the algorithm by a substantial amount, so this algorithm isn't very
@@ -1688,84 +1740,86 @@ In fact, all of the items in the array could be in one queue, in which
 case the array is completely sorted. Here's the code to do a natural
 merge sort with arrays and queues:
 
+```c
     void jsw_merge(int a[], int *q[2], int top[2])
     {
         int i[2] = { 0 }, k = 0;
         int dir = q[1][0] < q[0][0];
-    
+
         a[k++] = q[dir][i[dir]++];
-    
+
         while (i[dir] < top[dir])
         {
             dir = q[1][i[1]] < q[0][i[0]];
-    
+
             /* Special case: Use larger item */
             if (q[dir][i[dir]] < a[k - 1] && a[k - 1] < q[!dir][i[!dir]])
             {
                 dir = !dir;
             }
-    
+
             a[k++] = q[dir][i[dir]++];
         }
-    
+
         while (i[0] < top[0])
         {
             a[k++] = q[0][i[0]++];
         }
-    
+
         while (i[1] < top[1])
         {
             a[k++] = q[1][i[1]++];
         }
     }
-    
+
     void jsw_mergesort(int a[], int n)
     {
         int *q[2], top[2];
         int half, i;
-    
+
         if (n < 2)
         {
             return;
         }
-    
+
         q[0] = malloc(n * sizeof *q[0]);
         q[1] = malloc(n * sizeof *q[1]);
-    
+
         for (;;)
         {
             top[0] = top[1] = 0;
             q[0][top[0]++] = a[0];
             half = 0;
-    
+
             for (i = 1; i < n; i++)
             {
                 if (a[i] < q[half][top[half] - 1])
                 {
                     half = !half;
                 }
-    
+
                 q[half][top[half]++] = a[i];
             }
-    
+
             if (top[0] == 0 || top[1] == 0)
             {
                 break;
             }
-    
+
             jsw_merge(a, q, top);
         }
-    
+
         half = top[0] == 0;
-    
+
         for (i = 0; i < n; i++)
         {
             a[i] = q[half][i];
         }
-    
+
         free(q[0]);
         free(q[1]);
     }
+```
 
 Notice that **jsw\_merge** no longer needs to allocate memory because
 that memory is allocated in **jsw\_mergesort** to the queues, and then
@@ -1786,7 +1840,7 @@ basically the opposite of what we want (in this tutorial we're sorting
 in ascending order). Pay careful attention to how the two queues work
 together to sort the array:
 
-``` 
+```
           Result              Queue A             Queue B
  1)  |8|7|6|5|4|3|2|1|   | | | | | | | | |   | | | | | | | | |
  2)  |7|5|3|1|8|6|4|2|   |8|6|4|2| | | | |   |7|5|3|1| | | | |
@@ -1815,6 +1869,7 @@ However, the natural merge sort is ideal for linked lists because by
 splicing nodes, you avoid the problem of copying data all over the
 place. Here's a tuned natural merge sort for linked lists:
 
+```c
     /* Remove a node from a list and push it onto a tail pointer */
     #define split_push(head,tail,item) do { \
       struct jsw_node *save = item->next; \
@@ -1827,70 +1882,71 @@ place. Here's a tuned natural merge sort for linked lists:
         } \
       item = save; \
     }while (0)
-    
+
     struct jsw_node *jsw_merge(struct jsw_node *a, struct jsw_node *q[2])
     {
         int dir = q[0]->data > q[1]->data;
         struct jsw_node *save = a = q[dir];
-    
+
         /* Intended assignment */
         while (q[dir] = q[dir]->next)
         {
             dir = q[0]->data > q[1]->data;
-    
+
             if (q[dir]->data < a->data  && a->data < q[!dir]->data)
             {
                 dir = !dir;
             }
-    
+
             a->next = q[dir];
             a = a->next;
         }
-    
+
         dir = q[0] == NULL;
-    
+
         while (q[dir] != NULL)
         {
             a->next = q[dir];
             q[dir] = q[dir]->next;
             a = a->next;
         }
-    
+
         return save;
     }
-    
+
     void jsw_mergesort(struct jsw_list *list)
     {
         struct jsw_node *q[2] = { 0 };
         struct jsw_node *a = list->head;
-    
+
         for (;;)
         {
             struct jsw_node *end[2] = { 0 };
             int half = 0;
-    
+
             split_push(q[0], end[0], a);
-    
+
             while (a != NULL)
             {
                 if (a->data < end[half]->data)
                 {
                     half = !half;
                 }
-    
+
                 split_push(q[half], end[half], a);
             }
-    
+
             if (q[0] == NULL || q[1] == NULL)
             {
                 break;
             }
-    
+
             a = jsw_merge(a, q);
         }
-    
+
         list->head = q[q[0] == NULL];
     }
+```
 
 Not only is the code simpler (assuming you're familiar with linked
 lists), it's also much faster than the array version. The extra space
@@ -1933,7 +1989,7 @@ Here's the process on an array of 10 items ranged from \[0,10) using a
 1-based index algorithm described in Donald Knuth's “The Art of Computer
 Programming”, volume 3:
 
-``` 
+```
  |1|7|4|0|9|4|8|8|2|4|
 
  Get counts:
@@ -1959,35 +2015,37 @@ it out before moving on, because this will be a fundamental part of the
 coming radix sorts. Be happy that it's in C, I had to translate it from
 MIX...
 
+```c
     void jsw_countsort(int a[], int m, int n)
     {
         int *aux = malloc(n * sizeof *aux);
         int *count = calloc(m + 1, sizeof *count);
         int i;
-    
+
         for (i = 0; i < n; i++)
         {
             ++count[a[i] + 1];
         }
-    
+
         for (i = 1; i < m; i++)
         {
             count[i] += count[i - 1];
         }
-    
+
         for (i = 0; i < n; i++)
         {
             aux[count[a[i]]++] = a[i];
         }
-    
+
         for (i = 0; i < n; i++)
         {
             a[i] = aux[i];
         }
-    
+
         free(count);
         free(aux);
     }
+```
 
 As we discovered previously in the tutorial, the lower bound for sorting
 algorithms that use comparisons to find the relative order of items is
@@ -2018,7 +2076,7 @@ Before we get into the code, let's look at an example execution where we
 start at the least significant digit of several 3 digit numbers and use
 counting sort until we get to the most significant digit:
 
-``` 
+```
    1     2     3     4
  -----------------------
  |341| |100| |100| |100|
@@ -2056,47 +2114,49 @@ our case, we only need to count all of the possible bytes, so the count
 array can be as small as **( 1U \<\< CHAR\_BIT ) + 1**, which is exactly
 what we do. :-)
 
+```c
     #define RANGE ((1U << CHAR_BIT) + 1)
     #define digit(x,i) ((x) >> ((i) * CHAR_BIT) & UCHAR_MAX)
-    
+
     void jsw_radix_pass(int a[], int aux[], int n, int radix)
     {
         int i;
         int count[RANGE] = { 0 };
-    
+
         for (i = 0; i < n; i++)
         {
             ++count[digit(a[i], radix) + 1];
         }
-    
+
         for (i = 1; i < RANGE; i++)
         {
             count[i] += count[i - 1];
         }
-    
+
         for (i = 0; i < n; i++)
         {
             aux[count[digit(a[i], radix)]++] = a[i];
         }
-    
+
         for (i = 0; i < n; i++)
         {
             a[i] = aux[i];
         }
     }
-    
+
     void jsw_radixsort(int a[], int n)
     {
         int i;
         int *aux = malloc(n * sizeof *aux);
-    
+
         for (i = 0; i < sizeof *a; i++)
         {
             jsw_radix_pass(a, aux, n, i);
         }
-    
+
         free(aux);
     }
+```
 
 The biggest problem with LSD radix sort is that it starts at the digits
 that make the least difference. If we could start with the most
@@ -2110,7 +2170,7 @@ length items and we don't have to touch all of the digits to get a
 sorted array. This makes MSD radix sort considerably faster and more
 useful.
 
-``` 
+```
  Original:
 
  |369|267|564|100|341|224|178|958|762|334|
@@ -2152,63 +2212,65 @@ thing, but for variety and to show the variable length item strength of
 MSD radix sort, we'll implement this one to sort strings instead of
 integers:
 
+```c
     /* Extract ith MSD byte */
     #define digit(x,i) ((x)[i])
     #define bin(x) (first + count[x])
-    
+
     void jsw_radix_pass(char *a[], char *aux[], int count[], int first, int last, int radix)
     {
         int i;
-    
+
         for (i = first; i < last; i++)
         {
             ++count[digit(a[i], radix) + 1];
         }
-    
+
         for (i = 1; i < UCHAR_MAX; i++)
         {
             count[i] += count[i - 1];
         }
-    
+
         for (i = first; i < last; i++)
         {
             aux[count[digit(a[i], radix)]++] = a[i];
         }
-    
+
         for (i = first; i < last; i++)
         {
             a[i] = aux[i - first];
         }
     }
-    
+
     void jsw_radixsort_r(char *a[], char *aux[], int first, int last, int radix)
     {
         if (radix <= UCHAR_MAX && last - first > THRESHOLD)
         {
             int count[UCHAR_MAX + 1] = { 0 };
             int i;
-    
+
             jsw_radix_pass(a, aux, count, first, last, radix);
-    
+
             for (i = 0; i < UCHAR_MAX - 1; i++)
             {
                 int left = bin(i);
                 int right = bin(i + 1) - 1;
-    
+
                 jsw_radixsort_r(a, aux, left, right, radix + 1);
             }
         }
     }
-    
+
     void jsw_radixsort(char *a[], int n)
     {
         char **aux = malloc((n + 1) * sizeof *aux);
-    
+
         jsw_radixsort_r(a, aux, 0, n, 0);
         jsw_insertion(a, n);
-    
+
         free(aux);
     }
+```
 
 MSD radix sort doesn't require a stable sort as the workhorse algorithm,
 even though we still used counting sort because it's fast. So MSD radix

@@ -1,6 +1,6 @@
 # Binary Search Trees I
 
-  
+
 
 Trees are among the oldest and most heavily used data structures in
 computer programming. At the most general, trees are simply undirected
@@ -98,7 +98,7 @@ the data structure would be the middle item. If we move to the left then
 we see the middle of the left subset. Basically we're taking a linear
 list and changing it to an explicit binary search structure:
 
-``` 
+```
  [0][1][2][3][4][5][6][7][8][9]
 
 
@@ -146,7 +146,7 @@ valid item and tells us that we went too far in a search. With my
 convention of using a tilde ('\~') for the leaf, the tree would look
 like this:
 
-``` 
+```
                            5
 
                  /                   \
@@ -216,16 +216,18 @@ try to put concept to code. The first thing we need is a structure for a
 node. It's also convenient to treat a tree as a whole, so we'll use a
 second structure that just holds the root of the tree:
 
-    struct jsw_node 
+```c
+    struct jsw_node
     {
         int data;
         struct jsw_node *link[2];
     };
-    
-    struct jsw_tree 
+
+    struct jsw_tree
     {
         struct jsw_node *root;
     };
+```
 
 Okay, this is a typical self-referential data structure. If you know how
 a linked list works, there shouldn't be any problem. A structure can
@@ -255,6 +257,7 @@ the next node. Since we're basically treating each subtree as if it were
 a unique tree, and each step does the same thing, we can do all of this
 recursively. The code is so simple, it's almost frightening:
 
+```c
     int jsw_find_r(struct jsw_node *root, int data)
     {
         if (root == NULL)
@@ -268,15 +271,16 @@ recursively. The code is so simple, it's almost frightening:
         else
         {
             int dir = root->data < data;
-    
+
             return jsw_find_r(root->link[dir], data);
         }
     }
-    
+
     int jsw_find(struct jsw_tree *tree, int data)
     {
         return jsw_find_r(tree->root, data);
     }
+```
 
 The base cases for the recursion are a successful and unsuccessful
 search. If the root is a null pointer, we've reached a leaf and can
@@ -310,10 +314,11 @@ Searching a tree without recursion is even simpler than with recursion,
 removes the problem of stack overflow, and has a tendency to execute
 faster and with less memory use:
 
+```c
     int jsw_find(struct jsw_tree *tree, int data)
     {
         struct jsw_node *it = tree->root;
-    
+
         while (it != NULL)
         {
             if (it->data == data)
@@ -323,13 +328,14 @@ faster and with less memory use:
             else
             {
                 int dir = it->data < data;
-    
+
                 it = it->link[dir];
             }
         }
-    
+
         return 0;
     }
+```
 
 Some notes on duplicate items are in order. These search algorithms will
 find the first match, but if you want to search for duplicates, such as
@@ -352,7 +358,7 @@ of an unsuccessful search. You search for an item that's not in the
 tree, then replace the first leaf you get to with a new node that
 contains that item:
 
-``` 
+```
  Find 7
 
            5
@@ -384,6 +390,7 @@ simplify updates. Here's the recursive code to insert into a binary
 search tree (**make\_node** simply allocates memory, assigns the data
 and sets the links to NULL):
 
+```c
     struct jsw_node *jsw_insert_r(struct jsw_node *root, int data)
     {
         if (root == NULL)
@@ -397,19 +404,20 @@ and sets the links to NULL):
         else
         {
             int dir = root->data < data;
-    
+
             root->link[dir] = jsw_insert_r(root->link[dir], data);
         }
-    
+
         return root;
     }
-    
+
     int jsw_insert(struct jsw_tree *tree, int data)
     {
         tree->root = jsw_insert_r(tree->root, data);
-    
+
         return 1;
     }
+```
 
 The only difference between **jsw\_insert\_r** and **jsw\_find\_r** is
 what you return for the base cases. However, it might not be immediately
@@ -425,7 +433,7 @@ tree, trees grow downward, which make the whole “tree” concept confusing
 and tempts us again to think of trees as “roots”. Let's insert a few
 numbers into a new tree to see how this works:
 
-``` 
+```
  Insert 5
 
  5
@@ -526,6 +534,7 @@ to the root of the tree itself, we treat that as a special case. There
 are ways to get around the special case of an empty tree, but I think
 it's cleaner this way:
 
+```c
     int jsw_insert(struct jsw_tree *tree, int data)
     {
         if (tree->root == NULL)
@@ -536,11 +545,11 @@ it's cleaner this way:
         {
             struct jsw_node *it = tree->root;
             int dir;
-    
+
             for (;;)
             {
                 dir = it->data < data;
-    
+
                 if (it->data == data)
                 {
                     return 0;
@@ -549,15 +558,16 @@ it's cleaner this way:
                 {
                     break;
                 }
-    
+
                 it = it->link[dir];
             }
-    
+
             it->link[dir] = make_node(data);
         }
-    
+
         return 1;
     }
+```
 
 Since the conditions for exiting the loop are between the code to choose
 a direction and the code to move in that direction, an infinite loop is
@@ -588,7 +598,7 @@ the node has a left child. If the node has no children, just pick one
 because they're both leaves. Be sure to reset the parent to point to the
 child, and it unlinks the node from the tree:
 
-``` 
+```
  Left child
 
      p              p
@@ -644,7 +654,9 @@ can think of for basic trees, because you need to test which child of
 **x** is non-null and which child of **p** **x** is with our funky
 little reverse test:
 
+```c
     p->link[p->link[1] == x] = x->link[x->link[0] == NULL];
+```
 
 Cool, huh? It's like removal for a linked list, we replace **p**'s next
 link with **x**'s next link, thus removing **x** from the chain so that
@@ -661,7 +673,7 @@ case of deleting the tree's root in a bit, since that's a special case),
 this is the simple case for deletion. It gets harder when we want to
 delete a node with two children.
 
-``` 
+```
            5
 
        /       \
@@ -680,7 +692,7 @@ do we do with the extra child that would be floating around? Okay, what
 about attaching 5's left subtree to 7's left link and replacing 5 with
 8?
 
-``` 
+```
              8
 
            /   \
@@ -707,7 +719,7 @@ other, then remove the predecessor or successor that you replaced it
 with. In this tutorial, we'll use the successor, but it really makes no
 difference which you choose:
 
-``` 
+```
  Copy 7 to 5
 
            7
@@ -758,6 +770,7 @@ failure if we reach a leaf), we test to see how many children it has and
 do either the simple case or the hard case depending on that. Here's the
 code:
 
+```c
     int jsw_remove(struct jsw_tree *tree, int data)
     {
         if (tree->root != NULL)
@@ -765,7 +778,7 @@ code:
             struct jsw_node *p = NULL, *succ;
             struct jsw_node *it = tree->root;
             int dir;
-    
+
             for (;;)
             {
                 if (it == NULL)
@@ -776,32 +789,32 @@ code:
                 {
                     break;
                 }
-    
+
                 dir = it->data < data;
                 p = it;
                 it = it->link[dir];
             }
-    
+
             if (it->link[0] != NULL && it->link[1] != NULL)
             {
                 p = it;
                 succ = it->link[1];
-    
+
                 while (succ->link[0] != NULL)
                 {
                     p = succ;
                     succ = succ->link[0];
                 }
-    
+
                 it->data = succ->data;
                 p->link[p->link[1] == succ] = succ->link[1];
-    
+
                 free(succ);
             }
             else
             {
                 dir = it->link[0] == NULL;
-    
+
                 if (p == NULL)
                 {
                     tree->root = it->link[dir];
@@ -810,13 +823,14 @@ code:
                 {
                     p->link[p->link[1] == it] = it->link[dir];
                 }
-    
+
                 free(it);
             }
         }
-    
+
         return 1;
     }
+```
 
 The search is almost identical to non-recursive insertion, except this
 time we don't need to split the direction and movement code, and we also
@@ -860,6 +874,7 @@ going all of the way down to an external node, since we'll do that
 anyway. Then when we get to the bottom, we copy the current node's data
 into the saved node, and remove the current node:
 
+```c
     int jsw_remove(struct jsw_tree *tree, int data)
     {
         if (tree->root != NULL)
@@ -868,33 +883,34 @@ into the saved node, and remove the current node:
             struct jsw_node *it = &head;
             struct jsw_node *p, *f = NULL;
             int dir = 1;
-    
+
             it->link[1] = tree->root;
-    
+
             while (it->link[dir] != NULL)
             {
                 p = it;
                 it = it->link[dir];
                 dir = it->data <= data;
-    
+
                 if (it->data == data)
                 {
                     f = it;
                 }
             }
-    
+
             if (f != NULL)
             {
                 f->data = it->data;
                 p->link[p->link[1] == it] = it->link[it->link[0] == NULL];
                 free(it);
             }
-    
+
             tree->root = head.link[1];
         }
-    
+
         return 1;
     }
+```
 
 This function introduces two tricks to avoid special cases. The first
 trick is a dummy root so that the root of the tree always has a parent.
@@ -916,50 +932,52 @@ copying the successor's data). The recursion continues until we get to
 the successor, at which point we do a simple case deletion. Then we ride
 the recursion wave back up to make sure that all of the changes stick:
 
+```c
     struct jsw_node *jsw_remove_r(struct jsw_node *root, int data)
     {
         if (root != NULL)
         {
             int dir;
-    
+
             if (root->data == data)
             {
                 if (root->link[0] != NULL && root->link[1] != NULL)
                 {
                     struct jsw_node *succ = root->link[1];
-    
+
                     while (succ->link[0] != NULL)
                     {
                         succ = succ->link[0];
                     }
-    
+
                     data = succ->data;
                     root->data = data;
                 }
                 else
                 {
                     struct jsw_node *save = root;
-    
+
                     root = root->link[root->link[0] == NULL];
                     free(save);
-    
+
                     return root;
                 }
             }
-    
+
             dir = root->data <= data;
             root->link[dir] = jsw_remove_r(root->link[dir], data);
         }
-    
+
         return root;
     }
-    
+
     int jsw_remove(struct jsw_tree *tree, int data)
     {
         tree->root = jsw_remove_r(tree->root, data);
-    
+
         return 1;
     }
+```
 
 #### Destruction
 
@@ -971,6 +989,7 @@ node in the tree and delete them all in one shot. Ignoring the details
 of traversal for now because we'll discuss it shortly, this can be done
 with a postorder traversal, and the recursive solution is trivial:
 
+```c
     void jsw_destroy_r(struct jsw_node *root)
     {
         if (root != NULL)
@@ -980,11 +999,12 @@ with a postorder traversal, and the recursive solution is trivial:
             free(root);
         }
     }
-    
+
     void jsw_destroy(struct jsw_tree *tree)
     {
         jsw_destroy_r(tree->root);
     }
+```
 
 It can also be done without using recursion, but the non-recursive
 postorder traversal isn't exactly easy. However, you don't need to do a
@@ -994,7 +1014,7 @@ every left link is a leaf, it's easy to walk down the tree and delete
 every node: just save the right link, delete the node, then go to the
 saved link:
 
-``` 
+```
      0
 
    /   \
@@ -1028,7 +1048,7 @@ be either left or right. A left rotation takes the right child of a node
 and makes it the parent, with the node being the new left child. A right
 rotation is the symmetric inverse of a left rotation:
 
-``` 
+```
  Right rotation
 
          3              1
@@ -1051,11 +1071,12 @@ link and do a right rotation when there is, we can be sure that we'll
 see and delete every node in the tree. The code to do this is
 surprisingly short:
 
+```c
     void jsw_destroy(struct jsw_tree *tree)
     {
         struct jsw_node *it = tree->root;
         struct jsw_node *save;
-    
+
         while (it != NULL)
         {
             if (it->link[0] != NULL)
@@ -1070,10 +1091,11 @@ surprisingly short:
                 save = it->link[1];
                 free(it);
             }
-    
+
             it = save;
         }
     }
+```
 
 Okay, in case you didn't notice, this section was the end of the
 foundation sections and the beginning of the intermediate sections. I've
@@ -1132,6 +1154,7 @@ in the sorted order of the node values, and finally, traversal 5 is
 called postorder because the node is visited after both movements. Each
 of these can be written using a short and elegant recursive algorithm:
 
+```c
     void jsw_preorder_r(struct jsw_node *root)
     {
         if (root != NULL)
@@ -1141,12 +1164,12 @@ of these can be written using a short and elegant recursive algorithm:
             jsw_preorder_r(root->link[1]);
         }
     }
-    
+
     void jsw_preorder(struct jsw_tree *tree)
     {
         jsw_preorder_r(tree->root);
     }
-    
+
     void jsw_inorder_r(struct jsw_node *root)
     {
         if (root != NULL)
@@ -1156,12 +1179,12 @@ of these can be written using a short and elegant recursive algorithm:
             jsw_inorder_r(root->link[1]);
         }
     }
-    
+
     void jsw_inorder(struct jsw_tree *tree)
     {
         jsw_inorder_r(tree->root);
     }
-    
+
     void jsw_postorder_r(struct jsw_node *root)
     {
         if (root != NULL)
@@ -1171,11 +1194,12 @@ of these can be written using a short and elegant recursive algorithm:
             printf("%d\n", root->data);
         }
     }
-    
+
     void jsw_postorder(struct jsw_tree *tree)
     {
         jsw_postorder_r(tree->root);
     }
+```
 
 Let's look at an example. Given the following tree, we'll look at the
 results of each traversal. The preorder traversal visits a node and then
@@ -1184,7 +1208,7 @@ An inorder traversal moves as far left as possible before visiting the
 node, so the order would be 2, 3, 5, 6, 7, 8. Postorder traversal would
 result in 2, 3, 6, 8, 7, 5.
 
-``` 
+```
          5
 
        /   \
@@ -1202,38 +1226,40 @@ all of the values, let's actually look at the structure of the tree. You
 can do this easily with an inorder traversal, and it prints out the tree
 rotated 90° counter-clockwise:
 
+```c
     void jsw_structure_r(struct jsw_node *root, int level)
     {
         int i;
-    
+
         if (root == NULL)
         {
             for (i = 0; i < level; i++)
             {
                 putchar('\t');
             }
-    
+
             puts("~");
         }
         else
         {
             jsw_structure_r(root->link[1], level + 1);
-    
+
             for (i = 0; i < level; i++)
             {
                 putchar('\t');
             }
-    
+
             printf("%d\n", root->data);
-    
+
             jsw_structure_r(root->link[0], level + 1);
         }
     }
-    
+
     void jsw_structure(struct jsw_tree *tree)
     {
         jsw_structure_r(tree->root, 0);
     }
+```
 
 Notice how this is basically the same thing as **jsw\_inorder**, except
 instead of just printing the value of the node, we also print a number
@@ -1251,36 +1277,38 @@ and the levelorder travesal if the queue were replaced with a stack. If
 not, don't worry about it. Believe it or not, that's precisely what
 needs to be done to write an iterative preorder traversal. Wow:
 
+```c
     void jsw_preorder(struct jsw_tree *tree)
     {
         struct jsw_node *it = tree->root;
         struct jsw_node *up[50];
         int top = 0;
-    
+
         if (it == NULL)
         {
             return;
         }
-    
+
         up[top++] = it;
-    
+
         while (top != 0)
         {
             it = up[--top];
-    
+
             printf("%d\n", it->data);
-    
+
             if (it->link[1] != NULL)
             {
                 up[top++] = it->link[1];
             }
-    
+
             if (it->link[0] != NULL)
             {
                 up[top++] = it->link[0];
             }
         }
     }
+```
 
 Inorder traversal is harder. We need to walk to the left without losing
 any of the right links or any of the parents. This implies at least
@@ -1288,12 +1316,13 @@ several loops, one to save the links for backtracking, one to visit the
 saved links, and another to manage successive branches. Fortunately,
 while the logic is rather complex, the code is surprisingly simple:
 
+```c
     void jsw_inorder(struct jsw_tree *tree)
     {
         struct jsw_node *it = tree->root;
         struct jsw_node *up[50];
         int top = 0;
-    
+
         while (it != NULL)
         {
             while (it != NULL)
@@ -1302,29 +1331,30 @@ while the logic is rather complex, the code is surprisingly simple:
                 {
                     up[top++] = it->link[1];
                 }
-    
+
                 up[top++] = it;
                 it = it->link[0];
             }
-    
+
             it = up[--top];
-    
+
             while (top != 0 && it->link[1] == NULL)
             {
                 printf("%d\n", it->data);
                 it = up[--top];
             }
-    
+
             printf("%d\n", it->data);
-    
+
             if (top == 0)
             {
                 break;
             }
-    
+
             it = up[--top];
         }
     }
+```
 
 The outer loop continues until it is a null pointer. This could be due
 to an empty tree at the very beginning, or because there are no more
@@ -1362,6 +1392,7 @@ link”, and 2 means “visit the top of the stack”. This solution is
 convenient because it fits comfortably into my scheme for using boolean
 values to determine whether to go left or right:
 
+```c
     void jsw_postorder(struct jsw_tree *tree)
     {
         struct
@@ -1370,19 +1401,19 @@ values to determine whether to go left or right:
             int n;
         } up[50], it;
         int top = 0, dir;
-    
+
         up[top].p = tree->root;
         up[top++].n = 0;
-    
+
         while (top != 0)
         {
             it = up[--top];
-    
+
             if (it.n != 2)
             {
                 dir = it.n++;
                 up[top++] = it;
-    
+
                 if (it.p->link[dir] != NULL)
                 {
                     up[top].p = it.p->link[dir];
@@ -1395,6 +1426,7 @@ values to determine whether to go left or right:
             }
         }
     }
+```
 
 The code is short, but incredibly opaque. A diagram of the execution
 helps a great deal in figuring out what the algorithm is really doing.
@@ -1434,7 +1466,7 @@ visit the items in the order 5, 3, 7, 2, 6, 8. Note that this isn't the
 only way to do a levelorder traversal, but because it's the most common,
 we'll use it as our example for discussion. So there.
 
-``` 
+```
          5
 
        /   \
@@ -1479,36 +1511,38 @@ It's basically the preorder traversal with a queue instead of a stack. I
 used a simple array based rotating queue with front and back indices,
 but beyond that it's a really simple function:
 
+```c
     void jsw_levelorder(struct jsw_tree *tree)
     {
         struct jsw_node *it = tree->root;
         struct jsw_node *q[50];
         int front = 0, back = 0;
-    
+
         if (it == NULL)
         {
             return;
         }
-    
+
         q[front++] = it;
-    
+
         while (front != back)
         {
             it = q[back++];
-    
+
             printf("%d\n", it->data);
-    
+
             if (it->link[0] != NULL)
             {
                 q[front++] = it->link[0];
             }
-    
+
             if (it->link[1] != NULL)
             {
                 q[front++] = it->link[1];
             }
         }
     }
+```
 
 Since this is a tutorial about trees and not queues, I'll try to
 restrain myself from describing how it works and we can simply trust
@@ -1520,13 +1554,15 @@ All of these traversals are fine for what they do, but they're not
 usually fine for what we want to do. Or at least what *I* want to do.
 What I want to do is this:
 
+```c
     int *x = first(tree);
-    
+
     while (x != NULL)
     {
         printf("%d\n", *x);
         x = next(tree);
     }
+```
 
 That's hard to do with both the recursive and non-recursive traversals
 that we've looked at so far because we need to save the state of the
@@ -1539,12 +1575,14 @@ following structure (as usual, the size of the stack is pretty
 arbitrary, but it shouldn't be less than the expected height of the
 tree):
 
+```c
     struct jsw_trav
     {
         struct jsw_node *up[50]; /* Stack */
         struct jsw_node *it;     /* Current node */
         int top;                 /* Top of stack */
     };
+```
 
 Now for the fun part. Since the most common traversal by far is an
 inorder traversal, we'll do that one. It's by no means the only
@@ -1556,11 +1594,12 @@ that's farthest to the left. So we write a simple function called
 **jsw\_first**, which initializes a **jsw\_trav** instance, moves the
 current node to the smallest item, and saves the path:
 
+```c
     int *jsw_first(struct jsw_trav *trav, struct jsw_tree *tree)
     {
         trav->it = tree->root;
         trav->top = 0;
-    
+
         if (trav->it != NULL)
         {
             while (trav->it->link[0] != NULL)
@@ -1569,7 +1608,7 @@ current node to the smallest item, and saves the path:
                 trav->it = trav->it->link[0];
             }
         }
-    
+
         if (trav->it != NULL)
         {
             return &trav->it->data;
@@ -1579,6 +1618,7 @@ current node to the smallest item, and saves the path:
             return NULL;
         }
     }
+```
 
 Notice how a pointer to the item is returned instead of the item itself.
 This makes it easier to test for boundaries because when the traversal
@@ -1597,13 +1637,14 @@ successor up the tree, which involves popping the stack as long as we've
 already visited the right link. If the stack is empty, we terminate the
 traversal by setting the current node to **NULL**.
 
+```c
     int *jsw_next(struct jsw_trav *trav)
     {
         if (trav->it->link[1] != NULL)
         {
             trav->up[trav->top++] = trav->it;
             trav->it = trav->it->link[1];
-    
+
             while (trav->it->link[0] != NULL)
             {
                 trav->up[trav->top++] = trav->it;
@@ -1613,7 +1654,7 @@ traversal by setting the current node to **NULL**.
         else
         {
             struct jsw_node *last;
-    
+
             do
             {
                 if (trav->top == 0)
@@ -1621,12 +1662,12 @@ traversal by setting the current node to **NULL**.
                     trav->it = NULL;
                     break;
                 }
-    
+
                 last = trav->it;
                 trav->it = trav->up[--trav->top];
             } while (last == trav->it->link[1]);
         }
-    
+
         if (trav->it != NULL)
         {
             return &trav->it->data;
@@ -1636,19 +1677,22 @@ traversal by setting the current node to **NULL**.
             return NULL;
         }
     }
+```
 
 Now I can do what I want to do, with only minor changes, and it only
 took boat loads of extra thought to make a stepwise traversal from a
 non-recursive traversal. Aren't you glad that I did it for you? :-)
 
+```c
     struct jsw_trav it;
     int *x = first(&it, tree);
-    
+
     while (x != NULL)
     {
         printf("%d\n", *x);
         x = next(&it);
     }
+```
 
 All in all, a stepwise traversal isn't much more difficult than a
 non-recursive traversal, and it's so much more flexible it's not even
@@ -1675,17 +1719,19 @@ turns out, the latter is more common than the former, and by far the
 most common solution is an extra link for every node that points up to
 the parent. There are called, cleverly, parent pointers:
 
+```c
     struct jsw_node
     {
         int data;
         struct jsw_node *up;
         struct jsw_node *link[2];
     };
-    
+
     struct jsw_tree
     {
         struct jsw_node *root;
     };
+```
 
 Insertion into a tree with parent pointers is pretty simple. Only a
 small bit of code needs to be added to the function to set the parent
@@ -1694,6 +1740,7 @@ parent pointer a leaf value so we can test for it. All of this is done
 in **make\_node**, which allocates memory to a new node, assigns the
 data, and sets all links to **NULL**:
 
+```c
     int jsw_insert(struct jsw_tree *tree, int data)
     {
         if (tree->root == NULL)
@@ -1704,11 +1751,11 @@ data, and sets all links to **NULL**:
         {
             struct jsw_node *it = tree->root;
             int dir;
-    
+
             for (;;)
             {
                 dir = it->data < data;
-    
+
                 if (it->data == data)
                 {
                     return 0;
@@ -1717,16 +1764,17 @@ data, and sets all links to **NULL**:
                 {
                     break;
                 }
-    
+
                 it = it->link[dir];
             }
-    
+
             it->link[dir] = make_node(data);
             it->link[dir]->up = it;
         }
-    
+
         return 1;
     }
+```
 
 Since the parent of the new node is it, we have no trouble setting the
 link. As long as you have access to the parent, setting a parent pointer
@@ -1740,6 +1788,7 @@ parent pointer because it's possible that the replacement node is a
 leaf\! This can happen with both the tree's root and further down the
 tree, so these are two special cases:
 
+```c
     int jsw_remove(struct jsw_tree *tree, int data)
     {
         if (tree->root != NULL)
@@ -1748,46 +1797,47 @@ tree, so these are two special cases:
             struct jsw_node *it = &head;
             struct jsw_node *f = NULL;
             int dir = 1;
-    
+
             it->link[1] = tree->root;
             tree->root->up = &head;
-    
+
             while (it->link[dir] != NULL)
             {
                 it = it->link[dir];
                 dir = it->data <= data;
-    
+
                 if (it->data == data)
                 {
                     f = it;
                 }
             }
-    
+
             if (f != NULL)
             {
                 int dir = it->link[0] == NULL;
-    
+
                 f->data = it->data;
                 it->up->link[it->up->link[1] == it] = it->link[dir];
-    
+
                 if (it->link[dir] != NULL)
                 {
                     it->link[dir]->up = it->up;
                 }
-    
+
                 free(it);
             }
-    
+
             tree->root = head.link[1];
-    
+
             if (tree->root != NULL)
             {
                 tree->root->up = NULL;
             }
         }
-    
+
         return 1;
     }
+```
 
 Finally we come to traversal. This is the whole reason for adding parent
 pointers. Now we don't need that kludgy stack to move toward a successor
@@ -1795,15 +1845,16 @@ up the tree, we can just follow the parent pointers. **jsw\_trav** and
 **jsw\_first** are almost identical, differing only in that they don't
 use a stack:
 
+```c
     struct jsw_trav
     {
         struct jsw_node *it;
     };
-    
+
     int *jsw_first(struct jsw_trav *trav, struct jsw_tree *tree)
     {
         trav->it = tree->root;
-    
+
         if (trav->it != NULL)
         {
             while (trav->it->link[0] != NULL)
@@ -1811,7 +1862,7 @@ use a stack:
                 trav->it = trav->it->link[0];
             }
         }
-    
+
         if (trav->it != NULL)
         {
             return &trav->it->data;
@@ -1821,18 +1872,20 @@ use a stack:
             return NULL;
         }
     }
+```
 
 The big differences are in **jsw\_next**, where we now remove the use of
 the stack and simply follow a parent pointer when upward movement is
 needed. The logic is basically the same, and the changes are minimal.
 Not a bad trade for removing that stack, is it?
 
+```c
     int *jsw_next(struct jsw_trav *trav)
     {
         if (trav->it->link[1] != NULL)
         {
             trav->it = trav->it->link[1];
-    
+
             while (trav->it->link[0] != NULL)
             {
                 trav->it = trav->it->link[0];
@@ -1847,11 +1900,11 @@ Not a bad trade for removing that stack, is it?
                     trav->it = trav->it->up;
                     break;
                 }
-    
+
                 trav->it = trav->it->up;
             }
         }
-    
+
         if (trav->it != NULL)
         {
             return &trav->it->data;
@@ -1861,6 +1914,7 @@ Not a bad trade for removing that stack, is it?
             return NULL;
         }
     }
+```
 
 #### Right Threading
 
@@ -1877,17 +1931,19 @@ binary search tree would need two flags. A more common solution only
 uses one thread for the right link and simply leaves the left links as
 they are in a normal tree:
 
+```c
     struct jsw_node
     {
         int data;
         int thread;
         struct jsw_node *link[2];
     };
-    
+
     struct jsw_tree
     {
         struct jsw_node *root;
     };
+```
 
 In the following tree built using the above structures, every right link
 that would normally be a leaf is now a link to the inorder successor and
@@ -1899,7 +1955,7 @@ simplifies the stepwise traversal drastically. Also notice how a search
 for 5 would just go around in a circle from 6 to 3 to 4 and back to 6
 again. That's generally considered undesirable, hence the flag.
 
-``` 
+```
                      6
 
              /       |       \
@@ -1926,15 +1982,16 @@ must be changed to handle a thread, where if we reach a thread then it
 counts the same as if we reached a leaf so as to avoid that nasty little
 endless loop problem:
 
+```c
     int jsw_find(struct jsw_tree *tree, int data)
     {
         struct jsw_node *it = tree->root;
         int dir;
-    
+
         for (;;)
         {
             dir = it->data < data;
-    
+
             if (it->data == data)
             {
                 return 1;
@@ -1947,12 +2004,13 @@ endless loop problem:
             {
                 break;
             }
-    
+
             it = it->link[dir];
         }
-    
+
         return 0;
     }
+```
 
 Because the symmetry of the tree has been broken, we now need to
 consider the differences between moving to the right (where we might see
@@ -1969,7 +2027,7 @@ link points to 6. On the other hand, if we were to insert 0, it would be
 placed on the left link of 2. But we still need to set 0's right thread
 to point to the inorder successor, which would be 2:
 
-``` 
+```
  Insert 5, save thread to 6
 
                         6
@@ -2022,6 +2080,7 @@ always an external node with no children. Notice also that the rightmost
 node in the tree will have a thread to a leaf, which might affect other
 operations on the tree. Here's the code:
 
+```c
     int jsw_insert(struct jsw_tree *tree, int data)
     {
         if (tree->root == NULL)
@@ -2032,11 +2091,11 @@ operations on the tree. Here's the code:
         {
             struct jsw_node *it = tree->root, *q;
             int dir;
-    
+
             for (;;)
             {
                 dir = it->data < data;
-    
+
                 if (it->data == data)
                 {
                     return 0;
@@ -2049,12 +2108,12 @@ operations on the tree. Here's the code:
                 {
                     break;
                 }
-    
+
                 it = it->link[dir];
             }
-    
+
             q = make_node(data);
-    
+
             if (dir == 1)
             {
                 q->link[1] = it->link[1];
@@ -2064,12 +2123,13 @@ operations on the tree. Here's the code:
             {
                 q->link[1] = it;
             }
-    
+
             it->link[dir] = q;
         }
-    
+
         return 1;
     }
+```
 
 Instead of setting the value of the new node directly to the parent, we
 save it first in a temporary variable. That way the current thread of
@@ -2084,7 +2144,7 @@ set the left link of the parent to be a leaf. If it's the right link of
 its parent and it has no children, we need to set the right link of the
 parent to the right link of the node so as to save the thread.
 
-``` 
+```
  Remove 0, replace with leaf
 
                             6
@@ -2156,7 +2216,7 @@ parent to the right link of the node so as to save the thread.
      2     |    4    |     ~       8   |
            |         |                 |
    /   \___|  /   \__|           /   \_|
-                             
+
  ~          ~                  ~
 ```
 
@@ -2168,7 +2228,7 @@ give the node's thread to its child before replacing it with the child.
 It's kind of tricky, but you'll see that it's worth in when we do a
 stepwise traversal:
 
-``` 
+```
  Remove 4, replace with 5
 
                             6
@@ -2201,7 +2261,7 @@ stepwise traversal:
          2     |    5    |     ~       8   |
                |         |                 |
        / | \___|  /   \__|           /   \_|
-         |                
+         |
      0   |      ~                  ~
          |
    /   \_|
@@ -2221,7 +2281,7 @@ stepwise traversal:
          2     |    5    |     ~       8   |
                |         |                 |
        / | \___|  /   \__|           /   \_|
-         |                
+         |
      0   |      ~                  ~
          |
    /   \_|
@@ -2240,7 +2300,7 @@ stepwise traversal:
      0     |    5    |     ~       8   |
            |         |                 |
    /   \___|  /   \__|           /   \_|
-                          
+
  ~          ~                  ~
 ```
 
@@ -2250,6 +2310,7 @@ it's shorter and prettier. Pretty is good. I'm well known for taking the
 aesthetic appearance of my code very very seriously. Of course, that
 doesn't mean I don't also take correctness very very very seriously. ;-)
 
+```c
     int jsw_remove(struct jsw_tree *tree, int data)
     {
         if (tree->root != NULL)
@@ -2258,32 +2319,32 @@ doesn't mean I don't also take correctness very very very seriously. ;-)
             struct jsw_node *it = &head;
             struct jsw_node *q, *p, *f = NULL;
             int dir = 1;
-    
+
             it->link[1] = tree->root;
-    
+
             while (it->link[dir] != NULL)
             {
                 if (dir == 1 && it->thread == 1)
                 {
                     break;
                 }
-    
+
                 p = it;
                 it = it->link[dir];
                 dir = it->data <= data;
-    
+
                 if (it->data == data)
                 {
                     f = it;
                 }
             }
-    
+
             if (f != NULL)
             {
                 q = it->link[it->link[0] == NULL];
                 dir = p->link[1] == it;
                 f->data = it->data;
-    
+
                 if (p == q)
                 {
                     p->link[0] = NULL;
@@ -2303,15 +2364,16 @@ doesn't mean I don't also take correctness very very very seriously. ;-)
                     q->link[1] = it->link[1];
                     p->link[dir] = q;
                 }
-    
+
                 free(it);
             }
-    
+
             tree->root = head.link[1];
         }
-    
+
         return 1;
     }
+```
 
 Okay, so how do these statements match the cases described above? Well,
 since **p** is the parent and **q** is the child we want to replace
@@ -2333,15 +2395,16 @@ inorder traversals (with the exception that being able to go both ways
 using a fully threaded tree would be cooler). It's a shame we had to go
 to such lengths to build a tree that allows it:
 
+```c
     struct jsw_trav
     {
         struct jsw_node *it;
     };
-    
+
     int *jsw_first(struct jsw_trav *trav, struct jsw_tree *tree)
     {
         trav->it = tree->root;
-    
+
         if (trav->it != NULL)
         {
             while (trav->it->link[0] != NULL)
@@ -2349,7 +2412,7 @@ to such lengths to build a tree that allows it:
                 trav->it = trav->it->link[0];
             }
         }
-    
+
         if (trav->it != NULL)
         {
             return &trav->it->data;
@@ -2359,13 +2422,13 @@ to such lengths to build a tree that allows it:
             return NULL;
         }
     }
-    
+
     int *jsw_next(struct jsw_trav *trav)
     {
         if (trav->it->thread == 0)
         {
             trav->it = trav->it->link[1];
-    
+
             if (trav->it != NULL)
             {
                 while (trav->it->link[0] != NULL)
@@ -2378,7 +2441,7 @@ to such lengths to build a tree that allows it:
         {
             trav->it = trav->it->link[1];
         }
-    
+
         if (trav->it != NULL)
         {
             return &trav->it->data;
@@ -2388,6 +2451,7 @@ to such lengths to build a tree that allows it:
             return NULL;
         }
     }
+```
 
 Parent pointers are more common than threaded trees simply because it's
 easier to visualize what's happening. Right threaded trees are the most
@@ -2417,7 +2481,7 @@ every node in the tree is external. The easiest way to obtain and
 visualize this worst case is to insert numbers in ascending sorted
 order:
 
-``` 
+```
  0
 
    \
@@ -2462,7 +2526,7 @@ recursively choosing the middle node in the array and inserting it into
 a new tree. That results in a well balanced tree. The above degenerate
 tree would look like this after such a rebalancing effort:
 
-``` 
+```
            3
 
        /       \
@@ -2482,7 +2546,7 @@ rotation at every other node down the tree repeatedly. I'll leave an
 implementation up to you (it's called DSW, if you want to google it),
 but the process would look something like this:
 
-``` 
+```
  0 <-- rotate here
 
    \

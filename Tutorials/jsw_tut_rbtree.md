@@ -1,6 +1,6 @@
 # Red Black Trees
 
-  
+
 
 Welcome back\! Or if this is your first experience with my tutorials,
 get ready for a good time. But first, why another red black tree
@@ -74,7 +74,7 @@ values 0,1,2,3,4 to a binary search tree. Since each new item is greater
 in value than the last, it will be linked to the right subtree of every
 item before it:
 
-``` 
+```
  0
 
    \
@@ -100,7 +100,7 @@ structure. We would rather have two choices at each node instead of just
 one. This way we can take full advantage of the two-way design of binary
 search trees:
 
-``` 
+```
      1
 
    /   \
@@ -141,7 +141,7 @@ binary B-tree (SBB-tree) nodes are as follows (\* = Unknown node).
 Notice how the B-tree node's structure is faked using multiple binary
 tree nodes:
 
-``` 
+```
   2-node
 
   SBB-tree       B-tree
@@ -200,7 +200,7 @@ links) are colored red, while nodes that separate logical B-tree nodes
 Here are the 2, 3, and 4-nodes represented under the red black
 abstraction (B = black, R = red):
 
-``` 
+```
   2-node
 
      0,B
@@ -283,17 +283,19 @@ and if the flag is not set, the node is black. Naturally the inverse
 works as well, but the flag solution with red being set will be what
 this tutorial uses:
 
+```c
     struct jsw_node
     {
         int red;
         int data;
         struct jsw_node *link[2];
     };
-    
+
     struct jsw_tree
     {
         struct jsw_node *root;
     };
+```
 
 I'm sure that if this is your first time reading one of my tree
 tutorials that the link array could be confusing. Instead of using two
@@ -305,6 +307,7 @@ knowledge, I'm the only one who merges symmetric cases using it. To
 minimize shock, here is the basic difference between the “classic” idiom
 and my own:
 
+```c
     /* Classic binary search tree insertion */
     struct cbt_node *cbt_insert(struct cbt_node *root, int data)
     {
@@ -320,10 +323,10 @@ and my own:
         {
             root->right = cbt_insert(root->right, data);
         }
-    
+
         return root;
     }
-    
+
     /* Julienne Walker's binary search tree insertion */
     struct jsw_node *jsw_insert(struct jsw_node *root, int data)
     {
@@ -334,12 +337,13 @@ and my own:
         else
         {
             int dir = root->data < data;
-    
+
             root->link[dir] = jsw_insert(root->link[dir], data);
         }
-    
+
         return root;
     }
+```
 
 At this level there appears to be no savings, but if you add 50 lines of
 rebalancing code to both the left and right direction cases, it's easy
@@ -356,10 +360,12 @@ can be used. To make life simpler, we will assume that a leaf is black,
 because our leaves are null pointers and trying to fix a red violation
 with a null pointer scares the hell out of me. :-)
 
+```c
     int is_red(struct jsw_node *root)
     {
         return root != NULL && root->red == 1;
     }
+```
 
 Finally, the rotations. Any tree balancing scheme will use rotations to
 change the structure without breaking any of the rules of binary search
@@ -372,25 +378,27 @@ Despite that, we can still benefit from the color change during
 rotations in the deletion algorithm, so we will place it in the code for
 a single rotation, and the double rotation will use it implicitly:
 
+```c
     struct jsw_node *jsw_single(struct jsw_node *root, int dir)
     {
         struct jsw_node *save = root->link[!dir];
-    
+
         root->link[!dir] = save->link[dir];
         save->link[dir] = root;
-    
+
         root->red = 1;
         save->red = 0;
-    
+
         return save;
     }
-    
+
     struct jsw_node *jsw_double(struct jsw_node *root, int dir)
     {
         root->link[!dir] = jsw_single(root->link[!dir], !dir);
-    
+
         return jsw_single(root, dir);
     }
+```
 
 Don't get so anxious, we're not going to look at insertion just yet.
 Balanced trees are not trivial data structures, and red black trees are
@@ -405,10 +413,11 @@ large of a case to test by hand). Since the tester would only be used
 for debugging, we can use recursion and expect it to be slow, which it
 is:
 
+```c
     int jsw_rb_assert(struct jsw_node *root)
     {
         int lh, rh;
-    
+
         if (root == NULL)
         {
             return 1;
@@ -417,7 +426,7 @@ is:
         {
             struct jsw_node *ln = root->link[0];
             struct jsw_node *rn = root->link[1];
-    
+
             /* Consecutive red links */
             if (is_red(root))
             {
@@ -427,24 +436,24 @@ is:
                     return 0;
                 }
             }
-    
+
             lh = jsw_rb_assert(ln);
             rh = jsw_rb_assert(rn);
-    
+
             /* Invalid binary search tree */
             if ((ln != NULL && ln->data >= root->data) || (rn != NULL && rn->data <= root->data))
             {
                 puts("Binary tree violation");
                 return 0;
             }
-    
+
             /* Black height mismatch */
             if (lh != 0 && rh != 0 && lh != rh)
             {
                 puts("Black violation");
                 return 0;
             }
-    
+
             /* Only count black links */
             if (lh != 0 && rh != 0)
             {
@@ -456,6 +465,7 @@ is:
             }
         }
     }
+```
 
 This algorithm is relatively simple. It walks over every node in the
 tree and performs certain tests on the node and its children. The first
@@ -495,10 +505,11 @@ fix. Therefore, we will give new nodes the color red, and fix red
 violations during insertion. Laziness wins\! How about a helper function
 that returns a new red node?
 
+```c
     struct jsw_node *make_node(int data)
     {
         struct jsw_node *rn = malloc(sizeof *rn);
-    
+
         if (rn != NULL)
         {
             rn->data = data;
@@ -506,9 +517,10 @@ that returns a new red node?
             rn->link[0] = NULL;
             rn->link[1] = NULL;
         }
-    
+
         return rn;
     }
+```
 
 Ah, finally. Insertion. Adding a node. Instead of just talking big about
 red black trees, we can play with the real thing now. Okay, let's insert
@@ -521,6 +533,7 @@ black tree rule and saves us from dealing with a red violation at the
 root. The code should be obvious, and if it isn't, you're in the wrong
 tutorial. Try Binary Search Trees I, third door to the left:
 
+```c
     struct jsw_node *jsw_insert_r(struct jsw_node *root, int data)
     {
         if (root == NULL)
@@ -530,22 +543,23 @@ tutorial. Try Binary Search Trees I, third door to the left:
         else if (data != root->data)
         {
             int dir = root->data < data;
-    
+
             root->link[dir] = jsw_insert_r(root->link[dir], data);
-    
+
             /* Hey, let's rebalance here! */
         }
-    
+
         return root;
     }
-    
+
     int jsw_insert(struct jsw_tree *tree, int data)
     {
         tree->root = jsw_insert_r(tree->root, data);
         tree->root->red = 0;
-    
+
         return 1;
     }
+```
 
 This is about as simple as it gets for a binary search tree, but since
 we know that we might need to rebalance back up the tree, naturally the
@@ -570,7 +584,7 @@ don't do this for the new node). If both children are red then the
 parent has to be black, so we can just flip the colors. The parent
 becomes red and the children become black:
 
-``` 
+```
              2,B                         2,R
 
            /     \                     /     \
@@ -598,7 +612,7 @@ we need to do more work, and that screams rotation. In the second case,
 1's left child caused the violation, so we single rotate around 2 to the
 right, make 2 red, make 1 black, and call it a day:
 
-``` 
+```
              2,B                  1,B
 
            /     \              /     \
@@ -631,7 +645,7 @@ In fact, the first rotation in a red black tree of ascending numbers
 would only be after the seventh number. Let's look at that case after 7
 is inserted:
 
-``` 
+```
        1,B
 
      /     \
@@ -657,7 +671,7 @@ move up to 3 and see that it actually did cause a red violation at 3,
 and now the single rotation case applies. Let's look at the tree before
 the rotation is made:
 
-``` 
+```
        1,B
 
      /     \
@@ -684,7 +698,7 @@ and 1 becomes red. The resulting tree is as follows. Notice that there
 are no red violations, and all black heights are the same. So the single
 rotation case works:
 
-``` 
+```
                 3,B
 
            /           \
@@ -705,7 +719,7 @@ does. The final case is if instead of the left child being red, the
 right child is red. Well, if the right child is red then a single
 rotation won't cut it. This is where a double rotation is needed:
 
-``` 
+```
       2,B                        2,B                  1,B
 
     /     \                    /     \              /     \
@@ -738,6 +752,7 @@ algorithm to rotate further up. In fact, no status flag is needed at
 all\! It's possible that we could do color flips all the way back up the
 tree even though only one single or double rotation might be made:
 
+```c
     struct jsw_node *jsw_insert_r(struct jsw_node *root, int data)
     {
         if (root == NULL)
@@ -747,9 +762,9 @@ tree even though only one single or double rotation might be made:
         else if (data != root->data)
         {
             int dir = root->data < data;
-    
+
             root->link[dir] = jsw_insert_r(root->link[dir], data);
-    
+
             if (is_red(root->link[dir]))
             {
                 if (is_red(root->link[!dir]))
@@ -773,17 +788,18 @@ tree even though only one single or double rotation might be made:
                 }
             }
         }
-    
+
         return root;
     }
-    
+
     int jsw_insert(struct jsw_tree *tree, int data)
     {
         tree->root = jsw_insert_r(tree->root, data);
         tree->root->red = 0;
-    
+
         return 1;
     }
+```
 
 Okay, that was anticlimactic. Simple, elegant, that's red black
 insertion from the bottom-up\! I recommend you go through an example
@@ -843,6 +859,7 @@ to facilitate rebalancing (the simple recoloring after deletion, the
 status flag, and the mysterious **jsw\_remove\_balance**). Notice that
 the root is colored black at the end only if the tree is not empty:
 
+```c
     struct jsw_node *jsw_remove_r(struct jsw_node *root, int data, int *done)
     {
         if (root == NULL)
@@ -852,13 +869,13 @@ the root is colored black at the end only if the tree is not empty:
         else
         {
             int dir;
-    
+
             if (root->data == data)
             {
                 if (root->link[0] == NULL || root->link[1] == NULL)
                 {
                     struct jsw_node *save = root->link[root->link[0] == NULL];
-    
+
                     /* Case 0 */
                     if (is_red(root))
                     {
@@ -869,50 +886,51 @@ the root is colored black at the end only if the tree is not empty:
                         save->red = 0;
                         *done = 1;
                     }
-    
+
                     free(root);
-    
+
                     return save;
                 }
                 else
                 {
                     struct jsw_node *heir = root->link[0];
-    
+
                     while (heir->link[1] != NULL)
                     {
                         heir = heir->link[1];
                     }
-    
+
                     root->data = heir->data;
                     data = heir->data;
                 }
             }
-    
+
             dir = root->data < data;
             root->link[dir] = jsw_remove_r(root->link[dir], data, done);
-    
+
             if (!*done)
             {
                 root = jsw_remove_balance(root, dir, done);
             }
         }
-    
+
         return root;
     }
-    
+
     int jsw_remove(struct jsw_tree *tree, int data)
     {
         int done = 0;
-    
+
         tree->root = jsw_remove_r(tree->root, data, &done);
-    
+
         if (tree->root != NULL)
         {
             tree->root->red = 0;
         }
-    
+
         return 1;
     }
+```
 
 This time we really do need a status flag to tell the algorithm when to
 stop rebalancing. If **jsw\_remove\_balance** is called all of the way
@@ -929,7 +947,7 @@ we remove a node, and the node's sibling is black, and its children are
 both black, we have an easy case that propagates (\* = the place we
 deleted):
 
-``` 
+```
              3,B                      3,B
 
            /     \                  /     \
@@ -952,7 +970,7 @@ recolor the sibling red, the parent black, and we're done because the
 black heights are now balanced all of the way up the tree. We can set
 the flag for this one:
 
-``` 
+```
              3,R                      3,B
 
            /     \                  /     \
@@ -973,7 +991,7 @@ colors of the new parent and old parent. After the rotation, the new
 parent is recolored with the old parent's color and its children become
 black (E = either color):
 
-``` 
+```
              3,E                1,E
 
            /     \            /     \
@@ -992,7 +1010,7 @@ double rotation instead of a single rotation. The final colors are
 identical, and keep in mind that the sibling's left child would have to
 be black in this case. If it's red then the previous case applies:
 
-``` 
+```
              3,E                      2,E
 
            /     \                  /     \
@@ -1021,7 +1039,7 @@ deleting from the right subtree, but by using the direction index trick,
 we only need to handle one of the symmetric cases (where **dir** would
 be 1). All of this should become clear when you see the code:
 
-``` 
+```
              3,B                1,B
 
            /     \            /     \
@@ -1045,7 +1063,7 @@ one of its children and act depending on which one is red. If the outer
 child is red, we perform a double rotation, color the new parent black,
 its right child black, and its left child red:
 
-``` 
+```
        3,B                2,B
 
      /     \            /     \
@@ -1070,7 +1088,7 @@ is that we can reduce this to the previous case by a single rotation at
 2, then a double rotation at 5 (the previous case) will give us the
 structure we want, with the same colors as above.
 
-``` 
+```
        3,B                3,B                2,B
 
      /     \            /     \            /     \
@@ -1095,11 +1113,12 @@ code, but we can do much better as you'll see shortly. Compare the cases
 described above with their translations into source code. Did we cover
 all of the cases?
 
+```c
     struct jsw_node *jsw_remove_balance(struct jsw_node *root, int dir, int *done)
     {
         struct jsw_node *p = root;
         struct jsw_node *s = root->link[!dir];
-    
+
         if (s != NULL && !is_red(s))
         {
             /* Black sibling cases */
@@ -1109,14 +1128,14 @@ all of the cases?
                 {
                     *done = 1;
                 }
-    
+
                 p->red = 0;
                 s->red = 1;
             }
             else
             {
                 int save = root->red;
-    
+
                 if (is_red(s->link[!dir]))
                 {
                     p = jsw_single(p, dir);
@@ -1125,7 +1144,7 @@ all of the cases?
                 {
                     p = jsw_double(p, dir);
                 }
-    
+
                 p->red = save;
                 p->link[0]->red = 0;
                 p->link[1]->red = 0;
@@ -1136,7 +1155,7 @@ all of the cases?
         {
             /* Red sibling cases */
             struct jsw_node *r = s->link[dir];
-    
+
             if (!is_red(r->link[0]) && !is_red(r->link[1]))
             {
                 p = jsw_single(p, dir);
@@ -1148,19 +1167,20 @@ all of the cases?
                 {
                     s->link[dir] = jsw_single(r, !dir);
                 }
-    
+
                 p = jsw_double(p, dir);
                 s->link[dir]->red = 0;
                 p->link[!dir]->red = 1;
             }
-    
+
             p->red = 0;
             p->link[dir]->red = 0;
             *done = 1;
         }
-    
+
         return p;
     }
+```
 
 Traditionally, red black trees reduce the red sibling case to a black
 sibling case. Unless you're familiar with the red sibling case (which is
@@ -1173,7 +1193,7 @@ the tree, it just reverses which side the violation is on. By pushing
 the entire violation down, we ensure that the new sibling (2 in this
 case) is black:
 
-``` 
+```
              3,B                1,B
 
            /     \            /     \
@@ -1193,18 +1213,19 @@ be the new sibling. The cases after this are identical, but this time we
 need to be careful to move down without losing anything so that we can
 move back up without any trouble:
 
+```c
     struct jsw_node *jsw_remove_balance(struct jsw_node *root, int dir, int *done)
     {
         struct jsw_node *p = root;
         struct jsw_node *s = root->link[!dir];
-    
+
         /* Case reduction, remove red sibling */
         if (is_red(s))
         {
             root = jsw_single(root, dir);
             s = p->link[!dir];
         }
-    
+
         if (s != NULL)
         {
             if (!is_red(s->link[0]) && !is_red(s->link[1]))
@@ -1213,7 +1234,7 @@ move back up without any trouble:
                 {
                     *done = 1;
                 }
-    
+
                 p->red = 0;
                 s->red = 1;
             }
@@ -1221,7 +1242,7 @@ move back up without any trouble:
             {
                 int save = p->red;
                 int new_root = (root == p);
-    
+
                 if (is_red(s->link[!dir]))
                 {
                     p = jsw_single(p, dir);
@@ -1230,11 +1251,11 @@ move back up without any trouble:
                 {
                     p = jsw_double(p, dir);
                 }
-    
+
                 p->red = save;
                 p->link[0]->red = 0;
                 p->link[1]->red = 0;
-    
+
                 if (new_root)
                 {
                     root = p;
@@ -1243,13 +1264,14 @@ move back up without any trouble:
                 {
                     root->link[dir] = p;
                 }
-    
+
                 *done = 1;
             }
         }
-    
+
         return root;
     }
+```
 
 The subtle waltz of **root** and **p** could be confusing, but the only
 fix for that is an execution trace to make sure that you understand why
@@ -1298,7 +1320,7 @@ immediately cause a violation, we go straight to the violation test
 between the parent and the current node. If both are red, we do a single
 or double rotation at the grandparent:
 
-``` 
+```
  Color Flip
 
  1,E <-- p                 1,E
@@ -1356,13 +1378,14 @@ because a new node was inserted or because there was already a node with
 that data in the tree. As such, the following algorithm does not allow
 duplicates and also does not warn about a duplicate:
 
+```c
     int jsw_insert(struct jsw_tree *tree, int data)
     {
         if (tree->root == NULL)
         {
             /* Empty tree case */
             tree->root = make_node(data);
-    
+
             if (tree->root == NULL)
             {
                 return 0;
@@ -1371,16 +1394,16 @@ duplicates and also does not warn about a duplicate:
         else
         {
             struct jsw_node head = { 0 }; /* False tree root */
-    
+
             struct jsw_node *g, *t;     /* Grandparent & parent */
             struct jsw_node *p, *q;     /* Iterator & parent */
             int dir = 0, last;
-    
+
             /* Set up helpers */
             t = &head;
             g = p = NULL;
             q = t->link[1] = tree->root;
-    
+
             /* Search down the tree */
             for (;;)
             {
@@ -1388,7 +1411,7 @@ duplicates and also does not warn about a duplicate:
                 {
                     /* Insert new node at the bottom */
                     p->link[dir] = q = make_node(data);
-    
+
                     if (q == NULL)
                     {
                         return 0;
@@ -1401,12 +1424,12 @@ duplicates and also does not warn about a duplicate:
                     q->link[0]->red = 0;
                     q->link[1]->red = 0;
                 }
-    
+
                 /* Fix red violation */
                 if (is_red(q) && is_red(p))
                 {
                     int dir2 = t->link[1] == g;
-    
+
                     if (q == p->link[last])
                     {
                         t->link[dir2] = jsw_single(g, !last);
@@ -1416,35 +1439,36 @@ duplicates and also does not warn about a duplicate:
                         t->link[dir2] = jsw_double(g, !last);
                     }
                 }
-    
+
                 /* Stop if found */
                 if (q->data == data)
                 {
                     break;
                 }
-    
+
                 last = dir;
                 dir = q->data < data;
-    
+
                 /* Update helpers */
                 if (g != NULL)
                 {
                     t = g;
                 }
-    
+
                 g = p, p = q;
                 q = q->link[dir];
             }
-    
+
             /* Update root */
             tree->root = head.link[1];
         }
-    
+
         /* Make root black */
         tree->root->red = 0;
-    
+
         return 1;
     }
+```
 
 Granted, this top-down insertion isn't as pretty as the recursive
 bottom-up insertion, but it takes full advantage of the properties of
@@ -1472,7 +1496,7 @@ black violation. The first case is a simple reverse color flip. If a
 node and it's sibling are black, and all four of their children are
 black, make the parent black and both children red:
 
-``` 
+```
        1,R                  1,B
 
      /     \      ->      /     \
@@ -1490,7 +1514,7 @@ directions to get it to work. Notice how the black heights don't change,
 nor does the color of the parent. Since we're moving down already,
 pushing the sibling down is just what the doctor ordered:
 
-``` 
+```
        1,B            0,B
 
      /     \              \
@@ -1510,7 +1534,7 @@ However, in this case the color changes of **jsw\_single** won't quite
 cut it. To be thorough, we'll force the correct coloring for all
 affected nodes:
 
-``` 
+```
        2,R                  1,R
 
      /     \              /     \
@@ -1530,7 +1554,7 @@ rotation is more than enough to do the same thing. Since the final
 colors are the same, so the recoloring of this case can be lumped
 together with the previous case:
 
-``` 
+```
             2,R                  1,R
 
           /     \              /     \
@@ -1551,6 +1575,7 @@ deletion by copying that breaks the search off when the node is found,
 then has an extra step that explicitly looks for the predecessor. On the
 way down, of course, we look for and handle the cases shown above:
 
+```c
     int jsw_remove(struct jsw_tree *tree, int data)
     {
         if (tree->root != NULL)
@@ -1559,28 +1584,28 @@ way down, of course, we look for and handle the cases shown above:
             struct jsw_node *q, *p, *g; /* Helpers */
             struct jsw_node *f = NULL;  /* Found item */
             int dir = 1;
-    
+
             /* Set up helpers */
             q = &head;
             g = p = NULL;
             q->link[1] = tree->root;
-    
+
             /* Search and push a red down */
             while (q->link[dir] != NULL)
             {
                 int last = dir;
-    
+
                 /* Update helpers */
                 g = p, p = q;
                 q = q->link[dir];
                 dir = q->data < data;
-    
+
                 /* Save found node */
                 if (q->data == data)
                 {
                     f = q;
                 }
-    
+
                 /* Push the red node down */
                 if (!is_red(q) && !is_red(q->link[dir]))
                 {
@@ -1591,7 +1616,7 @@ way down, of course, we look for and handle the cases shown above:
                     else if (!is_red(q->link[!dir]))
                     {
                         struct jsw_node *s = p->link[!last];
-    
+
                         if (s != NULL)
                         {
                             if (!is_red(s->link[!last]) && !is_red(s->link[last]))
@@ -1604,7 +1629,7 @@ way down, of course, we look for and handle the cases shown above:
                             else
                             {
                                 int dir2 = g->link[1] == p;
-    
+
                                 if (is_red(s->link[last]))
                                 {
                                     g->link[dir2] = jsw_double(p, last);
@@ -1613,7 +1638,7 @@ way down, of course, we look for and handle the cases shown above:
                                 {
                                     g->link[dir2] = jsw_single(p, last);
                                 }
-    
+
                                 /* Ensure correct coloring */
                                 q->red = g->link[dir2]->red = 1;
                                 g->link[dir2]->link[0]->red = 0;
@@ -1623,7 +1648,7 @@ way down, of course, we look for and handle the cases shown above:
                     }
                 }
             }
-    
+
             /* Replace and remove if found */
             if (f != NULL)
             {
@@ -1631,18 +1656,19 @@ way down, of course, we look for and handle the cases shown above:
                 p->link[p->link[1] == q] = q->link[q->link[0] == NULL];
                 free(q);
             }
-    
+
             /* Update root and make it black */
             tree->root = head.link[1];
-    
+
             if (tree->root != NULL)
             {
                 tree->root->red = 0;
             }
         }
-    
+
         return 1;
     }
+```
 
 It's short and sweet, though the extreme level of indention is a little
 distasteful for some. As an exercise, try to shrink that down. :-) As

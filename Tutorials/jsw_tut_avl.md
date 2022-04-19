@@ -1,6 +1,6 @@
 # AVL Trees
 
-  
+
 
 New programmers who are introduced to binary search trees quickly learn
 that if items are inserted in certain orders, the performance of the
@@ -40,11 +40,13 @@ implementations, let's cover some of the key ideas behind why my code is
 the way it is. Most noticeable is my use of an array of two links rather
 than two separate links in the node structure:
 
+```c
     struct jsw_node
     {
         int data;
         struct jsw_node *link[2];
     };
+```
 
 The whole point of this is to avoid symmetric cases. Balanced tree
 algorithms can be very verbose because code needs to be duplicated for
@@ -53,26 +55,27 @@ symmetric cases, I prefer to merge them into a single case through the
 use of an easily computed array index. While a classic recursive binary
 search tree insertion would look like this:
 
+```c
     struct jsw_node
     {
         int data;
         struct jsw_node *left;
         struct jsw_node *right;
     };
-    
+
     struct jsw_node *make_node(int data)
     {
         struct jsw_node *rn = malloc(sizeof *rn);
-    
+
         if (rn != NULL)
         {
             rn->data = data;
             rn->left = rn->right = NULL;
         }
-    
+
         return rn;
     }
-    
+
     struct jsw_node *jsw_insert(struct jsw_node *tree, int data)
     {
         if (tree == NULL)
@@ -87,32 +90,34 @@ search tree insertion would look like this:
         {
             tree->right = jsw_insert(tree->right, data);
         }
-    
+
         return tree;
     }
+```
 
 The same function with my idiom would merge the left and right cases
 into one through the use of a direction index:
 
+```c
     struct jsw_node
     {
         int data;
         struct jsw_node *link[2];
     };
-    
+
     struct jsw_node *make_node(int data)
     {
         struct jsw_node *rn = malloc(sizeof *rn);
-    
+
         if (rn != NULL)
         {
             rn->data = data;
             rn->link[0] = rn->link[1] = NULL;
         }
-    
+
         return rn;
     }
-    
+
     struct jsw_node *jsw_insert(struct jsw_node *tree, int data)
     {
         if (tree == NULL)
@@ -122,18 +127,20 @@ into one through the use of a direction index:
         else
         {
             int dir = tree->data < data;
-    
+
             tree->link[dir] = jsw_insert(tree->link[dir], data);
         }
-    
+
         return tree;
     }
+```
 
 Now, at this level there don't seem to be any savings, and if you're
 unfamiliar with the idiom, it might take a moment to verify the
 correctness of the algorithm. However, consider a balanced tree
 algorithm that does more than simply walk down the tree in each case:
 
+```c
     struct jsw_node *jsw_insert(struct jsw_node *tree, int data)
     {
         if (tree == NULL)
@@ -150,15 +157,17 @@ algorithm that does more than simply walk down the tree in each case:
             tree->right = jsw_insert(tree->right, data);
             /* Fifty lines of right balancing code */
         }
-    
+
         return tree;
     }
+```
 
 That's 50 lines of extra code if you believe the comments, which is very
 hard for even a talented programmer to keep in his or her head all at
 once. In this case, my merging idiom is far more beneficial because it
 eliminates half of that code:
 
+```c
     struct jsw_node *jsw_insert(struct jsw_node *tree, int data)
     {
         if (tree == NULL)
@@ -168,13 +177,14 @@ eliminates half of that code:
         else
         {
             int dir = tree->data < data;
-    
+
             tree->link[dir] = jsw_insert(tree->link[dir], data);
             /* Fifty lines of dir balancing code */
         }
-    
+
         return tree;
     }
+```
 
 Shorter functions are often easier to understand, and more importantly,
 easier to check for correctness. In a traditional balanced tree
@@ -225,7 +235,7 @@ inserted in alternating order from the outside in, the same degenerate
 case arises because there is only one choice at each node and the effect
 is a linear data structure:
 
-``` 
+```
  0                                  3          0
 
    \                              /              \
@@ -249,7 +259,7 @@ algorithms. What we want in a binary search tree is a broad and flat
 structure, where each node has two links and any path is logarithmic to
 the number of nodes in the tree:
 
-``` 
+```
            3
 
        /       \
@@ -275,7 +285,7 @@ diagram, the first two trees are AVL trees but the third is not because
 the left subtree of 5 has a height of 2 while the right subtree is a
 null link and has a height of 0:
 
-``` 
+```
            3                        5                  5
 
        /       \                 /     \             /
@@ -304,7 +314,7 @@ back into balance without breaking the binary search tree invariant. In
 the next diagram, a left rotation at 3 is made to bring the subtree into
 balance:
 
-``` 
+```
  3                     4
 
    \                 /   \
@@ -326,15 +336,17 @@ the function is called. In the above diagram, **root** would be 3, and
 **save** would be 4. The function returns the new root for reassignment
 into the tree.
 
+```c
     struct jsw_node *jsw_single(struct jsw_node *root, int dir)
     {
         struct jsw_node *save = root->link[!dir];
-    
+
         root->link[!dir] = save->link[dir];
         save->link[dir] = root;
-    
+
         return save;
     }
+```
 
 The second case that would violate the AVL invariant is if a subtree is
 too long in the opposite direction, where two rotations are required to
@@ -343,7 +355,7 @@ then the second is at the root. Notice how the binary search tree
 invariant is maintained throughout the entire operation, including the
 intermediate step of the first rotation:
 
-``` 
+```
  3             3                     4
 
    \             \                 /   \
@@ -362,20 +374,22 @@ in the body of **jsw\_double** instead of doing the double rotation
 manually. However, to better show how a double rotation works, I've
 hardcoded the operations for now:
 
+```c
     struct jsw_node *jsw_double(struct jsw_node *root, int dir)
     {
         struct jsw_node *save = root->link[!dir]->link[dir];
-    
+
         root->link[!dir]->link[dir] = save->link[!dir];
         save->link[!dir] = root->link[!dir];
         root->link[!dir] = save;
-    
+
         save = root->link[!dir];
         root->link[!dir] = save->link[dir];
         save->link[dir] = root;
-    
+
         return save;
     }
+```
 
 This is all well and good, but how does one determine when a subtree is
 out of balance in one of these ways? By storing extra balance
@@ -385,17 +399,19 @@ and easy to use implementation that uses this minimum, so a variety of
 other methods are used in practice. The first method is the one that I
 will be using in this tutorial; a simple integer:
 
+```c
     struct jsw_node
     {
         int data;
         int balance;
         struct jsw_node *link[2];
     };
-    
+
     struct jsw_tree
     {
         struct jsw_node *root;
     };
+```
 
 Variations of even this solution exist, with varying success and
 reasons. Most commonly, a signed or unsigned char is used with space
@@ -420,7 +436,7 @@ used, but balance factors in this range can be updated easily with
 minimal effort. Here are the trees given previously with bounded balance
 factors:
 
-``` 
+```
                3,0                         5,-1                 5,-2
 
            /         \                   /      \             /
@@ -444,7 +460,7 @@ so there is no hidden limitation. Here are the same three trees with
 unbounded balance factors. Notice that the balance of each node is the
 longest path in its subtrees:
 
-``` 
+```
                3,2                        5,2                5,2
 
            /         \                  /     \            /
@@ -475,70 +491,70 @@ asterisk stands for balance factors that don't matter during
 intermediate rotations):
 
     Single case:
-    
-    
+
+
          x,+2                         y,0
-    
+
        /      \                     /     \
-    
+
      A          y,+1     ->     x,0         C
-    
+
               /      \        /     \
-    
+
             B          C    A         B
-    
-    
+
+
     Double case 1 (z is balanced):
-    
-    
+
+
          x,+2                   x,*                               z,0
-    
+
        /      \               /     \                          /       \
-    
+
      A          y,-1        A         z,*                  x,0           y,0
-    
+
               /      \   ->         /     \         ->   /     \       /     \
-    
+
           z,0          D          B         y,*        A         B   C         D
-    
+
         /     \                           /     \
-    
+
       B         C                       C         D
-    
-    
+
+
     Double case 2 (z's right subtree is taller):
-    
-    
+
+
          x,+2                   x,*                               z,0
-    
+
        /      \               /     \                          /       \
-    
+
      A          y,-1        A         z,*                  x,-1          y,0
-    
+
               /      \   ->         /     \         ->   /      \      /     \
-    
+
           z,+1         D          B         y,*        A          B  C         D
-    
+
         /      \                          /     \
-    
+
       B          C                      C         D
-    
-    
+
+
     Double case 3 (z's left subtree is taller):
-    
-    
+
+
          x,+2                   x,*                               z,0
-    
+
        /      \               /     \                          /       \
-    
+
      A          y,-1        A         z,*                  x,0          y,+1
-    
+
               /      \   ->         /     \         ->   /     \      /      \
-    
+
           z,-1         D          B         y,*        A         B  C          D
-    
+
         /      \                          /     \
-    
+
       B          C                      C         D
 
 The code to implement this is simple, and can be modularized into a
@@ -552,11 +568,12 @@ insertion and deletion, just like the direction index, so they are both
 arguments to the function. Follow the code closely and walk through each
 of the cases above to see how the diagrams translate into code:
 
+```c
     void jsw_adjust_balance(struct jsw_node *root, int dir, int bal)
     {
         struct jsw_node *n = root->link[dir];
         struct jsw_node *nn = n->link[!dir];
-    
+
         if (nn->balance == 0)
         {
             root->balance = n->balance = 0;
@@ -571,9 +588,10 @@ of the cases above to see how the diagrams translate into code:
             root->balance = 0;
             n->balance = bal;
         }
-    
+
         nn->balance = 0;
     }
+```
 
 Of course, just knowing how to change the balance factors for a double
 rotation isn't enough. Another helper function that handles rebalancing
@@ -586,11 +604,12 @@ determines the value of **bal** and calls the rotation functions as
 necessary. Once again, follow through this code and see how it compares
 to each diagram above:
 
+```c
     struct jsw_node *jsw_insert_balance(struct jsw_node *root, int dir)
     {
         struct jsw_node *n = root->link[dir];
         int bal = dir == 0 ? -1 : +1;
-    
+
         if (n->balance == bal)
         {
             root->balance = n->balance = 0;
@@ -601,9 +620,10 @@ to each diagram above:
             jsw_adjust_balance(root, dir, bal);
             root = jsw_double(root, !dir);
         }
-    
+
         return root;
     }
+```
 
 These two functions are all that's needed to rebalance a violation of
 the AVL invariant during insertion. Now all we need to do is come up
@@ -620,6 +640,7 @@ iterative version, this is a simple matter of breaking from a loop or
 returning from a function, but in the following recursive version a
 status flag is needed:
 
+```c
     struct jsw_node *jsw_insert_r(struct jsw_node *root, int data, int *done)
     {
         if (root == NULL)
@@ -629,14 +650,14 @@ status flag is needed:
         else
         {
             int dir = root->data < data;
-    
+
             root->link[dir] = jsw_insert_r(root->link[dir], data, done);
-    
+
             if (!*done)
             {
                 /* Update balance factors */
                 root->balance += dir == 0 ? -1 : +1;
-    
+
                 /* Rebalance as necessary and terminate */
                 if (root->balance == 0)
                 {
@@ -649,18 +670,19 @@ status flag is needed:
                 }
             }
         }
-    
+
         return root;
     }
-    
+
     int jsw_insert(struct jsw_tree *tree, int data)
     {
         int done = 0;
-    
+
         tree->root = jsw_insert_r(tree->root, data, &done);
-    
+
         return 1;
     }
+```
 
 There are only three cases for updating balance factors, since there are
 only three values in the range. If the balance factor was 0, then it is
@@ -681,119 +703,119 @@ balance factor of a node returned by **make\_node** is 0 to show that it
 is balanced:
 
     Insert 0:
-    
+
        0,0
-    
+
     Insert 1:
-    
+
        0,1
-    
+
            \
-    
+
              1,0
-    
+
     Insert 2:
-    
+
            1,0
-    
+
          /     \
-    
+
      0,0         2,0
-    
+
     Insert 3:
-    
+
            1,1
-    
+
          /     \
-    
+
      0,0         2,1
-    
+
                      \
-    
+
                        3,0
-    
+
     Insert 4:
-    
+
            1,1
-    
+
          /     \
-    
+
      0,0         3,0
-    
+
                /     \
-    
+
            2,0         4,0
-    
+
     Insert 5:
-    
+
                  3,0
-    
+
                /     \
-    
+
            1,0         4,1
-    
+
          /     \           \
-    
+
      0,0         2,0         5,0
-    
+
     Insert 6:
-    
+
                      3,0
-    
+
                /            \
-    
+
            1,0                5,0
-    
+
          /     \            /     \
-    
+
      0,0         2,0    4,0         6,0
-    
+
     Insert 7:
-    
+
                      3,1
-    
+
                /            \
-    
+
            1,0                5,1
-    
+
          /     \            /     \
-    
+
      0,0         2,0    4,0         6,1
-    
+
                                         \
-    
+
                                           7,0
-    
+
     Insert 8:
-    
+
                      3,1
-    
+
                /            \
-    
+
            1,0                5,1
-    
+
          /     \            /     \
-    
+
      0,0         2,0    4,0         7,0
-    
+
                                   /     \
-    
+
                               6,0         8,0
-    
+
     Insert 9:
-    
+
                        3,1
-    
+
                /                \
-    
+
            1,0                    7,0
-    
+
          /     \                /     \
-    
+
      0,0         2,0        5,0         8,1
-    
+
                           /     \           \
-    
+
                       4,0         6,0         9,0
 
 Moving onward and upward, a lot of people flinch at recursive
@@ -809,13 +831,14 @@ more easily figure out how the rest of the code does what it does. If
 you've gone through Binary Search Trees I, you should have no trouble
 with the logic:
 
+```c
     int jsw_insert(struct jsw_tree *tree, int data)
     {
         /* Empty tree case */
         if (tree->root == NULL)
         {
             tree->root = make_node(data);
-    
+
             if (tree->root == NULL)
             {
                 return 0;
@@ -825,38 +848,38 @@ with the logic:
         {
             struct jsw_node *it, *up[50];
             int upd[50], top = 0;
-    
+
             it = tree->root;
-    
+
             /* Search for an empty link, save the path */
             for (;;)
             {
                 /* Push direction and node onto stack */
                 upd[top] = it->data < data;
                 up[top++] = it;
-    
+
                 if (it->link[upd[top - 1]] == NULL)
                 {
                     break;
                 }
-    
+
                 it = it->link[upd[top - 1]];
             }
-    
+
             /* Insert a new node at the bottom of the tree */
             it->link[upd[top - 1]] = make_node(data);
-    
+
             if (it->link[upd[top - 1]] == NULL)
             {
                 return 0;
             }
-    
+
             /* Walk back up the search path */
             while (--top >= 0)
             {
                 /* Update balance factors */
                 up[top]->balance += upd[top] == 0 ? -1 : +1;
-    
+
                 /* Terminate or rebalance as necessary */
                 if (up[top]->balance == 0)
                 {
@@ -865,7 +888,7 @@ with the logic:
                 else if (abs(up[top]->balance) > 1)
                 {
                     up[top] = jsw_insert_balance(up[top], upd[top]);
-    
+
                     /* Fix the parent */
                     if (top != 0)
                     {
@@ -875,14 +898,15 @@ with the logic:
                     {
                         tree->root = up[0];
                     }
-    
+
                     break;
                 }
             }
         }
-    
+
         return 1;
     }
+```
 
 Instead of an implicit stack through recursion, this non-recursive
 version of AVL insertion caches only the required information using an
@@ -906,95 +930,96 @@ complexity comes from the task of removing a node from the tree rather
 than any rebalancing effort. The five cases are as follows:
 
     Single case 1 (y is not balanced):
-    
-    
+
+
          x,+1                         y,0
-    
+
        /      \                     /     \
-    
+
      A          y,+1     ->     x,0         C
-    
+
               /      \        /     \
-    
+
             B          C    A         B
-    
-    
+
+
     Single case 2 (y is balanced):
-    
-    
+
+
          x,+1                         y,-1
-    
+
        /      \                     /      \
-    
+
      A          y,0     ->     x,+1          C
-    
+
               /     \        /      \
-    
+
             B         C    A          B
-    
-    
+
+
     Double case 1 (z is balanced):
-    
-    
+
+
          x,+1                   x,*                               z,0
-    
+
        /      \               /     \                          /       \
-    
+
      A          y,-1        A         z,*                  x,0           y,0
-    
+
               /      \   ->         /     \         ->   /     \       /     \
-    
+
           z,0          D          B         y,*        A         B   C         D
-    
+
         /     \                           /     \
-    
+
       B         C                       C         D
-    
-    
+
+
     Double case 2 (z's right subtree is taller):
-    
-    
+
+
          x,+1                   x,*                                z,0
-    
+
        /      \               /     \                           /       \
-    
+
      A          y,-1        A         z,*                  x,-1           y,0
-    
+
               /      \   ->         /     \         ->   /      \       /     \
-    
+
           z,+1         D          B         y,*        A          B   C         D
-    
+
         /      \                          /     \
-    
+
       B          C                      C         D
-    
-    
+
+
     Double case 2 (z's left subtree is taller):
-    
-    
+
+
          x,+1                   x,*                               z,0
-    
+
        /      \               /     \                          /       \
-    
+
      A          y,-1        A         z,*                  x,0           y,+1
-    
+
               /      \   ->         /     \         ->   /     \       /      \
-    
+
           z,-1         D          B         y,*        A         B   C          D
-    
+
         /      \                          /     \
-    
+
       B          C                      C         D
 
 Amazingly enough, all but one of those cases are solved problems from
 insertion. So the code to add the extra case and rebalance after a
 deletion is trivial:
 
+```c
     struct jsw_node *jsw_remove_balance(struct jsw_node *root, int dir, int *done)
     {
         struct jsw_node *n = root->link[!dir];
         int bal = dir == 0 ? -1 : +1;
-    
+
         if (n->balance == -bal)
         {
             root->balance = n->balance = 0;
@@ -1012,9 +1037,10 @@ deletion is trivial:
             root = jsw_single(root, dir);
             *done = 1;
         }
-    
+
         return root;
     }
+```
 
 Wait, why does the new case set the status flag to show that rebalancing
 is finished? Unlike insertion, an AVL deletion could potentially require
@@ -1028,12 +1054,13 @@ that the node is deleted from. So look very closely at the values of
 **dir** and **bal** when **jsw\_remove\_balance** is called from the
 following AVL deletion algorithm:
 
+```c
     struct jsw_node *jsw_remove_r(struct jsw_node *root, int data, int *done)
     {
         if (root != NULL)
         {
             int dir;
-    
+
             /* Remove node */
             if (root->data == data)
             {
@@ -1041,37 +1068,37 @@ following AVL deletion algorithm:
                 if (root->link[0] == NULL || root->link[1] == NULL)
                 {
                     struct jsw_node *save;
-    
+
                     dir = root->link[0] == NULL;
                     save = root->link[dir];
                     free(root);
-    
+
                     return save;
                 }
                 else
                 {
                     /* Find inorder predecessor */
                     struct jsw_node *heir = root->link[0];
-    
+
                     while (heir->link[1] != NULL)
                     {
                         heir = heir->link[1];
                     }
-    
+
                     /* Copy and set new search data */
                     root->data = heir->data;
                     data = heir->data;
                 }
             }
-    
+
             dir = root->data < data;
             root->link[dir] = jsw_remove_r(root->link[dir], data, done);
-    
+
             if (!*done)
             {
                 /* Update balance factors */
                 root->balance += dir != 0 ? -1 : +1;
-    
+
                 /* Terminate or rebalance as necessary */
                 if (abs(root->balance) == 1)
                 {
@@ -1083,18 +1110,19 @@ following AVL deletion algorithm:
                 }
             }
         }
-    
+
         return root;
     }
-    
+
     int jsw_remove(struct jsw_tree *tree, int data)
     {
         int done = 0;
-    
+
         tree->root = jsw_remove_r(tree->root, data, &done);
-    
+
         return 1;
     }
+```
 
 The code to rebalance is actually shorter than insertion because of
 fewer cases where the updating would terminate early. What makes this
@@ -1119,103 +1147,103 @@ started with insertion by tracing through the deletion of a degenerate
 case, 0 through 7:
 
     Remove 0:
-    
+
                  3,1
-    
+
          /                \
-    
+
      1,1                    7,0
-    
+
          \                /     \
-    
+
            2,0        5,0         8,1
-    
+
                     /     \           \
-    
+
                 4,0         6,0         9,0
-    
+
     Remove 1:
-    
+
                  7,-1
-    
+
                /      \
-    
+
            3,1          8,1
-    
+
          /     \            \
-    
+
      2,0         5,0          9,0
-    
+
                /     \
-    
+
            4,0         6,0
-    
+
     Remove 2:
-    
+
                   7,-1
-    
+
                 /      \
-    
+
            5,-1          8,1
-    
+
          /      \            \
-    
+
      3,1          6,0          9,0
-    
+
          \
-    
+
            4,0
-    
+
     Remove 3:
-    
+
                  7,0
-    
+
                /     \
-    
+
            5,0         8,1
-    
+
          /     \           \
-    
+
      4,0         6,0         9,0
-    
+
     Remove 4:
-    
+
            7,0
-    
+
          /     \
-    
+
      5,1         8,1
-    
+
          \           \
-    
+
            6,0         9,0
-    
+
     Remove 5:
-    
+
            7,1
-    
+
          /     \
-    
+
      6,0         8,1
-    
+
                      \
-    
+
                        9,0
-    
+
     Remove 6:
-    
+
            8,0
-    
+
          /     \
-    
+
      7,0         9,0
-    
+
     Remove 7:
-    
+
      8,1
-    
+
          \
-    
+
            9,0
 
 The non-recursive code to remove from an AVL tree is identical to the
@@ -1225,6 +1253,7 @@ path. Rather than any sneaky tricks for handling the case where the node
 to be deleted has two children, a direct approach from Binary Search
 Trees I will be used:
 
+```c
     int jsw_remove(struct jsw_tree *tree, int data)
     {
         if (tree->root != NULL)
@@ -1232,9 +1261,9 @@ Trees I will be used:
             struct jsw_node *it, *up[32];
             int upd[32], top = 0;
             int done = 0;
-    
+
             it = tree->root;
-    
+
             for (;;)
             {
                 /* Terminate if not found */
@@ -1246,20 +1275,20 @@ Trees I will be used:
                 {
                     break;
                 }
-    
+
                 /* Push direction and node onto stack */
                 upd[top] = it->data < data;
                 up[top++] = it;
-    
+
                 it = it->link[upd[top - 1]];
             }
-    
+
             /* Remove the node */
             if (it->link[0] == NULL || it->link[1] == NULL)
             {
                 /* Which child is not null? */
                 int dir = it->link[0] == NULL;
-    
+
                 /* Fix parent */
                 if (top != 0)
                 {
@@ -1269,39 +1298,39 @@ Trees I will be used:
                 {
                     tree->root = it->link[dir];
                 }
-    
+
                 free(it);
             }
             else
             {
                 /* Find the inorder successor */
                 struct jsw_node *heir = it->link[1];
-    
+
                 /* Save the path */
                 upd[top] = 1;
                 up[top++] = it;
-    
+
                 while (heir->link[0] != NULL)
                 {
                     upd[top] = 0;
                     up[top++] = heir;
                     heir = heir->link[0];
                 }
-    
+
                 /* Swap data */
                 it->data = heir->data;
                 /* Unlink successor and fix parent */
                 up[top - 1]->link[up[top - 1] == it] = heir->link[1];
-    
+
                 free(heir);
             }
-    
+
             /* Walk back up the search path */
             while (--top >= 0 && !done)
             {
                 /* Update balance factors */
                 up[top]->balance += upd[top] != 0 ? -1 : +1;
-    
+
                 /* Terminate or rebalance as necessary */
                 if (abs(up[top]->balance) == 1)
                 {
@@ -1310,7 +1339,7 @@ Trees I will be used:
                 else if (abs(up[top]->balance) > 1)
                 {
                     up[top] = jsw_remove_balance(up[top], upd[top], &done);
-    
+
                     /* Fix parent */
                     if (top != 0)
                     {
@@ -1323,9 +1352,10 @@ Trees I will be used:
                 }
             }
         }
-    
+
         return 1;
     }
+```
 
 #### Top-Down Insertion
 
@@ -1351,7 +1381,7 @@ straight search down the tree. The trick is to save the last node along
 the path with a non-zero balance factor and its parent. Consider the
 following tree prior to the insertion of 9:
 
-``` 
+```
                  3,1
 
            /            \
@@ -1375,7 +1405,7 @@ we need to save both 5 and its parent so that when the root changes from
 will refer to these varibles as s and t. s will be the node where a
 rebalance is necessary and t will be its parent:
 
-``` 
+```
                  3,1  <--------------------- t
 
            /            \
@@ -1399,7 +1429,7 @@ inserted, 5, 7, and 8 will need to be updated to reflect the right
 subtree's growth by one. This will force a rebalance by causing 5's
 balance factor to grow to +2:
 
-``` 
+```
                  3,1  <----------------------------- t
 
            /            \
@@ -1427,13 +1457,14 @@ what it's doing, but otherwise it can be somewhat tricky through the
 need to carefully update the root of the tree as well as save both s and
 t for every case:
 
+```c
     int jsw_insert(struct jsw_tree *tree, int data)
     {
         /* Empty tree case */
         if (tree->root == NULL)
         {
             tree->root = make_node(data);
-    
+
             if (tree->root == NULL)
             {
                 return 0;
@@ -1442,57 +1473,57 @@ t for every case:
         else
         {
             struct jsw_node head = { 0 }; /* False tree root */
-    
+
             struct jsw_node *s, *t;     /* Place to rebalance and parent */
             struct jsw_node *p, *q;     /* Iterator and save pointer */
             int dir;
-    
+
             /* Set up false root to ease maintenance */
             t = &head;
             t->link[1] = tree->root;
-    
+
             /* Search down the tree, saving rebalance points */
             for (s = p = t->link[1];; p = q)
             {
                 dir = p->data < data;
                 q = p->link[dir];
-    
+
                 if (q == NULL)
                 {
                     break;
                 }
-    
+
                 if (q->balance != 0)
                 {
                     t = p;
                     s = q;
                 }
             }
-    
+
             /* Insert the new node */
             p->link[dir] = q = make_node(data);
-    
+
             if (q == NULL)
             {
                 return 0;
             }
-    
+
             /* Update balance factors */
             for (p = s; p != q; p = p->link[dir])
             {
                 dir = p->data < data;
                 p->balance += dir == 0 ? -1 : +1;
             }
-    
+
             q = s; /* Save rebalance point for parent fix */
-    
+
             /* Rebalance if necessary */
             if (abs(s->balance) > 1)
             {
                 dir = s->data < data;
                 s = jsw_insert_balance(s, dir);
             }
-    
+
             /* Fix parent */
             if (q == head.link[1])
             {
@@ -1503,9 +1534,10 @@ t for every case:
                 t->link[q == t->link[1]] = s;
             }
         }
-    
+
         return 1;
     }
+```
 
 This function uses a special dummy root to avoid special cases with the
 root of the tree except if rebalancing affects the root itself, in which
@@ -1546,35 +1578,37 @@ insertion will use a different implementation of **jsw\_single** and
 **jsw\_single** will also handle the updating of balance factors, then
 **jsw\_double** will call **jsw\_single** twice:
 
+```c
     #define height(p) ((p) == NULL ? -1 : (p)->balance)
     #define jsw_max(a,b) ((a) > (b) ? (a) : (b))
-    
+
     struct jsw_node *jsw_single(struct jsw_node *root, int dir)
     {
         struct jsw_node *save = root->link[!dir];
         int rlh, rrh, slh;
-    
+
         /* Rotate */
         root->link[!dir] = save->link[dir];
         save->link[dir] = root;
-    
+
         /* Update balance factors */
         rlh = height(root->link[0]);
         rrh = height(root->link[1]);
         slh = height(save->link[!dir]);
-    
+
         root->balance = jsw_max(rlh, rrh) + 1;
         save->balance = jsw_max(slh, root->balance) + 1;
-    
+
         return save;
     }
-    
+
     struct jsw_node *jsw_double(struct jsw_node *root, int dir)
     {
         root->link[!dir] = jsw_single(root->link[!dir], !dir);
-    
+
         return jsw_single(root, dir);
     }
+```
 
 This is conceptually more complicated than the rotation functions used
 for bounded AVL trees, but that is due to the extra temporary variables
@@ -1584,7 +1618,7 @@ the method behind how the balance factors are updated, we will walk
 through a simple example for single rotation. The following tree is an
 AVL tree with the new insertion of 8 violating the AVL invariant:
 
-``` 
+```
                  3,3 <----------------- No yet reached
 
            /            \
@@ -1613,7 +1647,7 @@ of the AVL invariant, where the difference in height between two
 subtrees cannot be larger than 1. Let's now perform a single left
 rotation around 6 and think about how to update the balance factors:
 
-``` 
+```
                  3,3
 
            /            \
@@ -1638,7 +1672,7 @@ gives us 1 and the tree is correct. Then move up the tree and continue
 to do perform the same operation all of the way back up to the root. The
 resulting tree is:
 
-``` 
+```
                  3,3
 
            /            \
@@ -1665,6 +1699,7 @@ localized enough so that no further changes need to be made further up
 the search path. The only thing missing from this function is the actual
 code to perform a rebalance:
 
+```c
     struct jsw_node *jsw_insert_r(struct jsw_node *root, int data, int *done)
     {
         if (root == NULL)
@@ -1675,41 +1710,42 @@ code to perform a rebalance:
         {
             int dir = root->data < data;
             int lh, rh, max;
-    
+
             root->link[dir] = jsw_insert_r(root->link[dir], data, done);
-    
+
             if (!*done)
             {
                 /* Rebalance if necessary */
                 lh = height(root->link[dir]);
                 rh = height(root->link[!dir]);
-    
+
                 if (lh - rh >= 2)
                 {
                     /* Rebalancing magic */
                     *done = 1;
                 }
-    
+
                 /* Update balance factors */
                 lh = height(root->link[dir]);
                 rh = height(root->link[!dir]);
                 max = jsw_max(lh, rh);
-    
+
                 root->balance = max + 1;
             }
         }
-    
+
         return root;
     }
-    
+
     int jsw_insert(struct jsw_tree *tree, int data)
     {
         int done = 0;
-    
+
         tree->root = jsw_insert_r(tree->root, data, &done);
-    
+
         return 1;
     }
+```
 
 The only trick now is to figure out how to rebalance a violation of the
 AVL invariant (I cleverly hid it with a voodoo cloaking comment).
@@ -1724,26 +1760,26 @@ operations again and think about why this test would work (hint: if the
 subtrees are of equal length then there cannot be a violation):
 
     dir == 1:
-    
+
      3                   4
-    
+
        \               /   \
-    
+
          4      -->  3       5
-    
+
            \
-    
+
              5
-    
-    
+
+
      3           3                   4
-    
+
        \           \               /   \
-    
+
          5  -->      4      -->  3       5
-    
+
        /               \
-    
+
      4                   5
 
 This realization paves the way for a simple solution. Just find the
@@ -1754,6 +1790,7 @@ temporary variables) and we can plug it into the framework given above
 with no trouble at all (mostly because the framework was devised by
 cutting this part out ;-D):
 
+```c
     struct jsw_node *jsw_insert_r(struct jsw_node *root, int data, int *done)
     {
         if (root == NULL)
@@ -1764,20 +1801,20 @@ cutting this part out ;-D):
         {
             int dir = root->data < data;
             int lh, rh, max;
-    
+
             root->link[dir] = jsw_insert_r(root->link[dir], data, done);
-    
+
             if (!*done)
             {
                 /* Rebalance if necessary */
                 lh = height(root->link[dir]);
                 rh = height(root->link[!dir]);
-    
+
                 if (lh - rh >= 2)
                 {
                     struct jsw_node *a = root->link[dir]->link[dir];
                     struct jsw_node *b = root->link[dir]->link[!dir];
-    
+
                     if (height(a) >= height(b))
                     {
                         root = jsw_single(root, !dir);
@@ -1786,30 +1823,31 @@ cutting this part out ;-D):
                     {
                         root = jsw_double(root, !dir);
                     }
-    
+
                     *done = 1;
                 }
-    
+
                 /* Update balance factors */
                 lh = height(root->link[dir]);
                 rh = height(root->link[!dir]);
                 max = jsw_max(lh, rh);
-    
+
                 root->balance = max + 1;
             }
         }
-    
+
         return root;
     }
-    
+
     int jsw_insert(struct jsw_tree *tree, int data)
     {
         int done = 0;
-    
+
         tree->root = jsw_insert_r(tree->root, data, &done);
-    
+
         return 1;
     }
+```
 
 Unbounded insertion without recursion is the basic framework for bounded
 insertion with unbounded rebalancing code spliced in. By now there
@@ -1821,12 +1859,13 @@ The reason is that the balance factor update step is after the rebalance
 step and still needs to be performed even if a stopping case or a
 rebalance occurs. So we can't simply break from the loop this time:
 
+```c
     int jsw_insert(struct jsw_tree *tree, int data)
     {
         if (tree->root == NULL)
         {
             tree->root = make_node(data);
-    
+
             if (tree->root == NULL)
             {
                 return 0;
@@ -1837,52 +1876,52 @@ rebalance occurs. So we can't simply break from the loop this time:
             struct jsw_node *it, *up[32];
             int upd[32], top = 0;
             int done = 0;
-    
+
             it = tree->root;
-    
+
             /* Search for an empty link, save the path */
             for (;;)
             {
                 /* Push direction and node onto stack */
                 upd[top] = it->data < data;
                 up[top++] = it;
-    
+
                 if (it->link[upd[top - 1]] == NULL)
                 {
                     break;
                 }
-    
+
                 it = it->link[upd[top - 1]];
             }
-    
+
             /* Insert a new node at the bottom of the tree */
             it->link[upd[top - 1]] = make_node(data);
-    
+
             if (it->link[upd[top - 1]] == NULL)
             {
                 return 0;
             }
-    
+
             /* Walk back up the search path */
             while (--top >= 0 && !done)
             {
                 int dir = up[top]->data < data;
                 int lh, rh, max;
-    
+
                 lh = height(up[top]->link[upd[top]]);
                 rh = height(up[top]->link[!upd[top]]);
-    
+
                 /* Terminate or rebalance as necessary */
                 if (lh - rh == 0)
                 {
                     done = 1;
                 }
-    
+
                 if (lh - rh >= 2)
                 {
                     struct jsw_node *a = up[top]->link[upd[top]]->link[upd[top]];
                     struct jsw_node *b = up[top]->link[upd[top]]->link[!upd[top]];
-    
+
                     if (height(a) >= height(b))
                     {
                         up[top] = jsw_single(up[top], !upd[top]);
@@ -1891,7 +1930,7 @@ rebalance occurs. So we can't simply break from the loop this time:
                     {
                         up[top] = jsw_double(up[top], !upd[top]);
                     }
-    
+
                     /* Fix parent */
                     if (top != 0)
                     {
@@ -1901,21 +1940,22 @@ rebalance occurs. So we can't simply break from the loop this time:
                     {
                         tree->root = up[0];
                     }
-    
+
                     done = 1;
                 }
-    
+
                 /* Update balance factors */
                 lh = height(up[top]->link[upd[top]]);
                 rh = height(up[top]->link[!upd[top]]);
                 max = jsw_max(lh, rh);
-    
+
                 up[top]->balance = max + 1;
             }
         }
-    
+
         return 1;
     }
+```
 
 That's unbounded insertion. In theory it's simpler than bounded
 insertion because there are fewer cases to consider, but the code tends
@@ -1939,12 +1979,13 @@ If the new difference is -2 or less, rebalancing is performed. Otherwise
 the updating of balance factors propagates up the search path. The rules
 remain the same, only the approach changes:
 
+```c
     struct jsw_node *jsw_remove_r(struct jsw_node *root, int data, int *done)
     {
         if (root != NULL)
         {
             int dir;
-    
+
             /* Remove node */
             if (root->data == data)
             {
@@ -1952,52 +1993,52 @@ remain the same, only the approach changes:
                 if (root->link[0] == NULL || root->link[1] == NULL)
                 {
                     struct jsw_node *save;
-    
+
                     dir = root->link[0] == NULL;
                     save = root->link[dir];
                     free(root);
-    
+
                     return save;
                 }
                 else
                 {
                     /* Find inorder predecessor */
                     struct jsw_node *heir = root->link[0];
-    
+
                     while (heir->link[1] != NULL)
                     {
                         heir = heir->link[1];
                     }
-    
+
                     /* Copy and set new search data */
                     root->data = heir->data;
                     data = heir->data;
                 }
             }
-    
+
             dir = root->data < data;
             root->link[dir] = jsw_remove_r(root->link[dir], data, done);
-    
+
             if (!*done)
             {
                 /* Update balance factors */
                 int lh = height(root->link[dir]);
                 int rh = height(root->link[!dir]);
                 int max = jsw_max(lh, rh);
-    
+
                 root->balance = max + 1;
-    
+
                 /* Terminate or rebalance as necessary */
                 if (lh - rh == -1)
                 {
                     *done = 1;
                 }
-    
+
                 if (lh - rh <= -2)
                 {
                     struct jsw_node *a = root->link[!dir]->link[dir];
                     struct jsw_node *b = root->link[!dir]->link[!dir];
-    
+
                     if (height(a) <= height(b))
                     {
                         root = jsw_single(root, dir);
@@ -2009,25 +2050,26 @@ remain the same, only the approach changes:
                 }
             }
         }
-    
+
         return root;
     }
-    
+
     int jsw_remove(struct jsw_tree *tree, int data)
     {
         int done = 0;
-    
+
         tree->root = jsw_remove_r(tree->root, data, &done);
-    
+
         return 1;
     }
+```
 
 Let's look through a quick example to see how deletion works with a
 double rotation case. In the following tree, we will delete 0. After the
 removal of 0, a double rotation is needed, first at 69, then at 58 to
 restore balance completely:
 
-``` 
+```
               58,3
 
             /      \
@@ -2097,15 +2139,16 @@ recursion. As with most of the algorithms in this tuorial, the
 non-recursive version is simply a translation of the recursive version
 using explicit stacks:
 
+```c
     int jsw_remove(struct jsw_tree *tree, int data)
     {
         if (tree->root != NULL)
         {
             struct jsw_node *it, *up[32];
             int upd[32], top = 0;
-    
+
             it = tree->root;
-    
+
             for (;;)
             {
                 /* Terminate if not found */
@@ -2117,20 +2160,20 @@ using explicit stacks:
                 {
                     break;
                 }
-    
+
                 /* Push direction and node onto stack */
                 upd[top] = it->data < data;
                 up[top++] = it;
-    
+
                 it = it->link[upd[top - 1]];
             }
-    
+
             /* Remove the node */
             if (it->link[0] == NULL || it->link[1] == NULL)
             {
                 /* Which child is not null? */
                 int dir = it->link[0] == NULL;
-    
+
                 /* Fix parent */
                 if (top != 0)
                 {
@@ -2140,54 +2183,54 @@ using explicit stacks:
                 {
                     tree->root = it->link[dir];
                 }
-    
+
                 free(it);
             }
             else
             {
                 /* Find the inorder successor */
                 struct jsw_node *heir = it->link[1];
-    
+
                 /* Save the path */
                 upd[top] = 1;
                 up[top++] = it;
-    
+
                 while (heir->link[0] != NULL)
                 {
                     upd[top] = 0;
                     up[top++] = heir;
                     heir = heir->link[0];
                 }
-    
+
                 /* Swap data */
                 it->data = heir->data;
                 /* Unlink successor and fix parent */
                 up[top - 1]->link[up[top - 1] == it] = heir->link[1];
-    
+
                 free(heir);
             }
-    
+
             /* Walk back up the search path */
             while (--top >= 0)
             {
                 int lh = height(up[top]->link[upd[top]]);
                 int rh = height(up[top]->link[!upd[top]]);
                 int max = jsw_max(lh, rh);
-    
+
                 /* Update balance factors */
                 up[top]->balance = max + 1;
-    
+
                 /* Terminate or rebalance as necessary */
                 if (lh - rh == -1)
                 {
                     break;
                 }
-    
+
                 if (lh - rh <= -2)
                 {
                     struct jsw_node *a = up[top]->link[!upd[top]]->link[upd[top]];
                     struct jsw_node *b = up[top]->link[!upd[top]]->link[!upd[top]];
-    
+
                     if (height(a) <= height(b))
                     {
                         up[top] = jsw_single(up[top], upd[top]);
@@ -2196,7 +2239,7 @@ using explicit stacks:
                     {
                         up[top] = jsw_double(up[top], upd[top]);
                     }
-    
+
                     /* Fix parent */
                     if (top != 0)
                     {
@@ -2209,9 +2252,10 @@ using explicit stacks:
                 }
             }
         }
-    
+
         return 1;
     }
+```
 
 Unlike unbounded insertion, the non-recursive unbounded deletion has no
 need for a status flag, so a simple loop break is all that we need to

@@ -1,6 +1,6 @@
 # Windows Services Simplified
 
-  
+
 
 I write a lot of Windows services...a *lot* of them. While the service
 template project in Visual Studio is certainly functional, my experience
@@ -25,6 +25,7 @@ Service.cs hooks into the Windows SCM interface and typically does as
 little as possible directly. But enough jabbering, let's look at the
 bare bones template that I start with:
 
+```csharp
     /// <summary>
     /// Service controller for the process.
     /// </summary>
@@ -41,30 +42,30 @@ bare bones template that I start with:
             CanHandleSessionChangeEvent = false;
             CanPauseAndContinue = false;
         }
-    
+
         #region Public Interface
         /// <summary>
         /// Starts the service.
         /// </summary>
         public void StartService(string[] args) { OnStart(args); }
-    
+
         /// <summary>
         /// Stops the service.
         /// </summary>
         public void StopService() { OnStop(); }
-    
+
         /// <summary>
         /// Shuts down the service.
         /// </summary>
         public void ShutdownService() { OnShutdown(); }
         #endregion
-    
+
         #region Service Control Interface
         protected override void OnStart(string[] args) { SwitchOn(); }
         protected override void OnStop() { SwitchOff(); }
         protected override void OnShutdown() { SwitchOff(); }
         #endregion
-    
+
         #region Miscellaneous Helpers
         /// <summary>
         /// Initializes and starts the service worker.
@@ -82,7 +83,7 @@ bare bones template that I start with:
                 throw;
             }
         }
-    
+
         /// <summary>
         /// Stops and cleans up the service worker.
         /// </summary>
@@ -92,6 +93,7 @@ bare bones template that I start with:
         }
         #endregion
     }
+```
 
 This is all you need for a basic functional service, and it highlights
 just how over-engineered the Visual Studio service template is. We do
@@ -121,6 +123,7 @@ call this 'Debug Mode', and it's the primary reason why the public
 methods are provided in the service class. Let's look at the bare bones
 Program.cs:
 
+```csharp
     public class Program
     {
         /// <summary>
@@ -137,7 +140,7 @@ Program.cs:
                 StartService(args);
             }
         }
-    
+
         /// <summary>
         /// Runs the process as an installed service.
         /// </summary>
@@ -145,7 +148,7 @@ Program.cs:
         {
             ServiceBase.Run(new ServiceBase[] { new Service() });
         }
-    
+
         /// <summary>
         /// Runs the process in a console window.
         /// </summary>
@@ -154,11 +157,11 @@ Program.cs:
             try
             {
                 Console.Title = Assembly.GetExecutingAssembly().GetName().Name + " [Debug Mode]";
-    
+
                 // Run the service worker
-    
+
                 Console.Read();
-    
+
                 // Stop and dispose the service worker
             }
             catch (Exception ex)
@@ -168,6 +171,7 @@ Program.cs:
             }
         }
     }
+```
 
 There's nothing to it. If the application is run interactively, we call
 `StartConsole` to run it as a console application. Otherwise,
