@@ -55,11 +55,17 @@ Both the libraries and the articles on Eternally Confuzzled were in
 the public domain, as stated [here][1].  (Despite the contradictory
 "© 2018 - Eternally Confuzzled" at the bottom of each page.)
 
+## Tests
+
+I (Patrick Pelletier) have added some tests for the jsw libraries.  To
+run the tests, just run the script `test/run-tests.pl`.  You will need
+to have Perl, gcc, and [valgrind][5] installed to run the tests.
+
 [1]: https://web.archive.org/web/20180225130248/http://www.eternallyconfuzzled.com/jsw_home.aspx
 [2]: https://en.wikipedia.org/wiki/Wayback_Machine
 [3]: https://github.github.com/gfm/
 [4]: https://pandoc.org/
-[5]: https://github.com/ppelleti/jsw-libs
+[5]: https://valgrind.org/
 
 [dst-avl]: Tutorials/jsw_tut_avl.md
 [dst-andersson]: Tutorials/jsw_tut_andersson.md

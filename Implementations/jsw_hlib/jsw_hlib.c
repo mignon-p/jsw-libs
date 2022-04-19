@@ -5,6 +5,10 @@
     > Modified (Julienne Walker): August 11, 2005
       Added a cast for malloc to enable clean
       compilation as C++
+    > Modified (Patrick Pelletier): April 17, 2022
+      Fixed jsw_resize, which freed the old table
+      without returning the new one, and also fixed
+      it so that it doesn't copy all the keys and items
 */
 #include "jsw_hlib.h"
 
@@ -12,6 +16,7 @@
 #include <cstdlib>
 
 using std::malloc;
+using std::calloc;
 using std::free;
 #else
 #include <stdlib.h>
@@ -273,33 +278,76 @@ int jsw_herase ( jsw_hash_t *htab, void *key )
 
 /*
   Grow or shrink the table, this is a slow operation
-  
+
   Returns: non-zero for success, zero for failure
 */
 int jsw_hresize ( jsw_hash_t *htab, size_t new_size )
 {
-  jsw_hash_t *new_htab;
-  jsw_node_t *it;
+  jsw_head_t **new_table;
+  jsw_node_t *it, *next;
   size_t i;
 
-  /* Build a new hash table, then assign it to the old one */
-  new_htab = jsw_hnew ( new_size, htab->hash, htab->cmp,
-    htab->keydup, htab->itemdup, htab->keyrel, htab->itemrel );
-
-  if ( new_htab == NULL )
+  new_table = (jsw_head_t **) calloc ( new_size, sizeof (*new_table) );
+  if ( new_table == NULL )
     return 0;
 
+  /* Go through the old table once, just to allocate the new heads */
   for ( i = 0; i < htab->capacity; i++ ) {
     if ( htab->table[i] == NULL )
       continue;
 
-    for ( it = htab->table[i]->first; it != NULL; it = it->next )
-      jsw_hinsert ( new_htab, it->key, it->item );
+    for ( it = htab->table[i]->first; it != NULL; it = it->next ) {
+      unsigned h = htab->hash ( it->key ) % new_size;
+
+      /* Create a chain if the bucket is empty */
+      if ( new_table[h] == NULL ) {
+        new_table[h] = new_chain();
+
+        /* If failure, free everything that has already been allocated */
+        if ( new_table[h] == NULL ) {
+          size_t j;
+
+          for ( j = 0; j < new_size; j++ ) {
+            free ( new_table[j] );
+          }
+
+          free ( new_table );
+          return 0;
+        }
+      }
+    }
   }
 
-  /* A hash table holds copies, so release the old table */
-  jsw_hdelete ( htab );
-  htab = new_htab;
+  /* At this point, all allocations are done, so nothing can fail */
+  for ( i = 0; i < htab->capacity; i++ ) {
+    if ( htab->table[i] == NULL )
+      continue;
+
+    for ( it = htab->table[i]->first; it != NULL; it = next ) {
+      unsigned h = htab->hash ( it->key ) % new_size;
+
+      /* Remember old next before we overwrite it */
+      next = it->next;
+
+      /* Insert at the front of the new chain */
+      it->next = new_table[h]->first;
+      new_table[h]->first = it;
+
+      ++new_table[h]->size;
+    }
+
+    /* Free old head */
+    free ( htab->table[i] );
+  }
+
+  /* Install the new table in the existing htab */
+  free ( htab->table );
+  htab->table = new_table;
+  htab->capacity = new_size;
+
+  /* Invalidate traversal information */
+  htab->curri = 0;
+  htab->currl = NULL;
 
   return 1;
 }
