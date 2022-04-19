@@ -84,9 +84,9 @@ to have Perl, gcc, and [valgrind][5] installed to run the tests.
 [art-bigo]: Articles/jsw_art_bigo.md
 [art-rand]: Articles/jsw_art_rand.md
 [art-atoi]: Articles/jsw_art_atoi.md
-[imp-atree]: Implementations/jsw_atree
-[imp-avltree]: Implementations/jsw_avltree
-[imp-hlib]: Implementations/jsw_hlib
-[imp-rand]: Implementations/jsw_rand
-[imp-rbtree]: Implementations/jsw_rbtree
-[imp-slib]: Implementations/jsw_slib
+[imp-atree]: src/jsw_atree
+[imp-avltree]: src/jsw_avltree
+[imp-hlib]: src/jsw_hlib
+[imp-rand]: src/jsw_rand
+[imp-rbtree]: src/jsw_rbtree
+[imp-slib]: src/jsw_slib
